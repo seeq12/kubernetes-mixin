@@ -63,12 +63,24 @@ local var = g.dashboard.variable;
           )
           + var.query.withSort(type='alphabetical'),
 
+        env:
+          var.query.new('env')
+          + var.query.withDatasourceFromVariable(self.datasource)
+          + var.query.queryTypes.withLabelValues(
+            $._config.envLabel,
+            'up{%(kubeControllerManagerSelector)s, %(clusterLabel)s="$cluster"}' % $._config,
+          )
+          + var.query.generalOptions.withLabel('env')
+          + var.query.refresh.onTime()
+          + var.query.generalOptions.showOnDashboard.withLabelAndValue()
+          + var.query.withSort(type='alphabetical'),
+
         instance:
           var.query.new('instance')
           + var.query.withDatasourceFromVariable(self.datasource)
           + var.query.queryTypes.withLabelValues(
             'instance',
-            'up{%(clusterLabel)s="$cluster", %(kubeControllerManagerSelector)s}' % $._config,
+            'up{%(clusterLabel)s="$cluster", %(envLabel)s="$env", %(kubeControllerManagerSelector)s}' % $._config,
           )
           + var.query.generalOptions.withLabel('instance')
           + var.query.refresh.onTime()
@@ -81,7 +93,7 @@ local var = g.dashboard.variable;
         statPanel(
           'Up',
           'none',
-          'sum(up{%(clusterLabel)s="$cluster", %(kubeControllerManagerSelector)s})' % $._config
+          'sum(up{%(clusterLabel)s="$cluster", %(envLabel)s="$env", %(kubeControllerManagerSelector)s})' % $._config
         )
         + stat.gridPos.withW(4),
 
@@ -91,7 +103,7 @@ local var = g.dashboard.variable;
         + tsPanel.queryOptions.withTargets([
           prometheus.new(
             '${datasource}',
-            'sum(rate(workqueue_adds_total{%(clusterLabel)s="$cluster", %(kubeControllerManagerSelector)s, instance=~"$instance"}[%(grafanaIntervalVar)s])) by (%(clusterLabel)s, instance, name)' % $._config
+            'sum(rate(workqueue_adds_total{%(clusterLabel)s="$cluster", %(envLabel)s="$env", %(kubeControllerManagerSelector)s, instance=~"$instance"}[%(grafanaIntervalVar)s])) by (%(clusterLabel)s, instance, name)' % $._config
           )
           + prometheus.withLegendFormat('{{%(clusterLabel)s}} {{instance}} {{name}}' % $._config),
         ]),
@@ -101,7 +113,7 @@ local var = g.dashboard.variable;
         + tsPanel.queryOptions.withTargets([
           prometheus.new(
             '${datasource}',
-            'sum(rate(workqueue_depth{%(clusterLabel)s="$cluster", %(kubeControllerManagerSelector)s, instance=~"$instance"}[%(grafanaIntervalVar)s])) by (%(clusterLabel)s, instance, name)' % $._config
+            'sum(rate(workqueue_depth{%(clusterLabel)s="$cluster", %(envLabel)s="$env", %(kubeControllerManagerSelector)s, instance=~"$instance"}[%(grafanaIntervalVar)s])) by (%(clusterLabel)s, instance, name)' % $._config
           )
           + prometheus.withLegendFormat('{{%(clusterLabel)s}} {{instance}} {{name}}' % $._config),
         ]),
@@ -111,7 +123,7 @@ local var = g.dashboard.variable;
         + tsPanel.queryOptions.withTargets([
           prometheus.new(
             '${datasource}',
-            'histogram_quantile(0.99, sum(rate(workqueue_queue_duration_seconds_bucket{%(clusterLabel)s="$cluster", %(kubeControllerManagerSelector)s, instance=~"$instance"}[%(grafanaIntervalVar)s])) by (%(clusterLabel)s, instance, name, le))' % $._config
+            'histogram_quantile(0.99, sum(rate(workqueue_queue_duration_seconds_bucket{%(clusterLabel)s="$cluster", %(envLabel)s="$env", %(kubeControllerManagerSelector)s, instance=~"$instance"}[%(grafanaIntervalVar)s])) by (%(clusterLabel)s, instance, name, le))' % $._config
           )
           + prometheus.withLegendFormat('{{%(clusterLabel)s}} {{instance}} {{name}}' % $._config),
         ]),
@@ -151,7 +163,7 @@ local var = g.dashboard.variable;
         + tsPanel.queryOptions.withTargets([
           prometheus.new(
             '${datasource}',
-            'histogram_quantile(0.99, sum(rate(rest_client_request_duration_seconds_bucket{%(clusterLabel)s="$cluster", %(kubeControllerManagerSelector)s, instance=~"$instance", verb="POST"}[%(grafanaIntervalVar)s])) by (verb, le))' % $._config
+            'histogram_quantile(0.99, sum(rate(rest_client_request_duration_seconds_bucket{%(clusterLabel)s="$cluster", %(envLabel)s="$env", %(kubeControllerManagerSelector)s, instance=~"$instance", verb="POST"}[%(grafanaIntervalVar)s])) by (verb, le))' % $._config
           )
           + prometheus.withLegendFormat('{{verb}}'),
         ]),
@@ -161,7 +173,7 @@ local var = g.dashboard.variable;
         + tsPanel.queryOptions.withTargets([
           prometheus.new(
             '${datasource}',
-            'histogram_quantile(0.99, sum(rate(rest_client_request_duration_seconds_bucket{%(clusterLabel)s="$cluster", %(kubeControllerManagerSelector)s, instance=~"$instance", verb="GET"}[%(grafanaIntervalVar)s])) by (verb, le))' % $._config
+            'histogram_quantile(0.99, sum(rate(rest_client_request_duration_seconds_bucket{%(clusterLabel)s="$cluster", %(envLabel)s="$env", %(kubeControllerManagerSelector)s, instance=~"$instance", verb="GET"}[%(grafanaIntervalVar)s])) by (verb, le))' % $._config
           )
           + prometheus.withLegendFormat('{{verb}}'),
         ]),
@@ -172,7 +184,7 @@ local var = g.dashboard.variable;
         + tsPanel.queryOptions.withTargets([
           prometheus.new(
             '${datasource}',
-            'process_resident_memory_bytes{%(clusterLabel)s="$cluster", %(kubeControllerManagerSelector)s,instance=~"$instance"}' % $._config
+            'process_resident_memory_bytes{%(clusterLabel)s="$cluster", %(envLabel)s="$env", %(kubeControllerManagerSelector)s,instance=~"$instance"}' % $._config
           )
           + prometheus.withLegendFormat('{{instance}}'),
         ]),
@@ -183,7 +195,7 @@ local var = g.dashboard.variable;
         + tsPanel.queryOptions.withTargets([
           prometheus.new(
             '${datasource}',
-            'rate(process_cpu_seconds_total{%(clusterLabel)s="$cluster", %(kubeControllerManagerSelector)s,instance=~"$instance"}[%(grafanaIntervalVar)s])' % $._config
+            'rate(process_cpu_seconds_total{%(clusterLabel)s="$cluster", %(envLabel)s="$env", %(kubeControllerManagerSelector)s,instance=~"$instance"}[%(grafanaIntervalVar)s])' % $._config
           )
           + prometheus.withLegendFormat('{{instance}}'),
         ]),
@@ -194,7 +206,7 @@ local var = g.dashboard.variable;
         + tsPanel.queryOptions.withTargets([
           prometheus.new(
             '${datasource}',
-            'go_goroutines{%(clusterLabel)s="$cluster", %(kubeControllerManagerSelector)s,instance=~"$instance"}' % $._config
+            'go_goroutines{%(clusterLabel)s="$cluster", %(envLabel)s="$env", %(kubeControllerManagerSelector)s,instance=~"$instance"}' % $._config
           )
           + prometheus.withLegendFormat('{{instance}}'),
         ]),
@@ -207,7 +219,7 @@ local var = g.dashboard.variable;
       + g.dashboard.time.withFrom('now-1h')
       + g.dashboard.time.withTo('now')
       + g.dashboard.withRefresh($._config.grafanaK8s.refresh)
-      + g.dashboard.withVariables([variables.datasource, variables.cluster, variables.instance])
+      + g.dashboard.withVariables([variables.datasource, variables.cluster, variables.env, variables.instance])
       + g.dashboard.withPanels(g.util.grid.wrapPanels(panels, panelWidth=24, panelHeight=7)),
   },
 }

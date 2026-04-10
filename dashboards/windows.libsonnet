@@ -63,12 +63,24 @@ local var = g.dashboard.variable;
       )
       + var.query.withSort(type='alphabetical'),
 
+    env:
+      var.query.new('env')
+      + var.query.withDatasourceFromVariable(self.datasource)
+      + var.query.queryTypes.withLabelValues(
+        $._config.envLabel,
+        'up{%(windowsExporterSelector)s, %(clusterLabel)s="$cluster"}' % $._config,
+      )
+      + var.query.generalOptions.withLabel('env')
+      + var.query.refresh.onTime()
+      + var.query.generalOptions.showOnDashboard.withLabelAndValue()
+      + var.query.withSort(type='alphabetical'),
+
     instance:
       var.query.new('instance')
       + var.query.withDatasourceFromVariable(self.datasource)
       + var.query.queryTypes.withLabelValues(
         'instance',
-        'windows_system_system_up_time{%(clusterLabel)s="$cluster"}' % $._config
+        'windows_system_system_up_time{%(clusterLabel)s="$cluster", %(envLabel)s="$env"}' % $._config
       )
       + var.query.generalOptions.withLabel('instance')
       + var.query.refresh.onTime()
@@ -79,7 +91,7 @@ local var = g.dashboard.variable;
       + var.query.withDatasourceFromVariable(self.datasource)
       + var.query.queryTypes.withLabelValues(
         'namespace',
-        'windows_pod_container_available{%(clusterLabel)s="$cluster"}' % $._config,
+        'windows_pod_container_available{%(clusterLabel)s="$cluster", %(envLabel)s="$env"}' % $._config,
       )
       + var.query.generalOptions.withLabel('namespace')
       + var.query.refresh.onTime()
@@ -91,7 +103,7 @@ local var = g.dashboard.variable;
       + var.query.withDatasourceFromVariable(self.datasource)
       + var.query.queryTypes.withLabelValues(
         'pod',
-        'windows_pod_container_available{%(clusterLabel)s="$cluster",namespace="$namespace"}' % $._config,
+        'windows_pod_container_available{%(clusterLabel)s="$cluster", %(envLabel)s="$env",namespace="$namespace"}' % $._config,
       )
       + var.query.generalOptions.withLabel('pod')
       + var.query.refresh.onTime()
@@ -123,7 +135,7 @@ local var = g.dashboard.variable;
         statPanel(
           'CPU Utilisation',
           'none',
-          '1 - avg(rate(windows_cpu_time_total{%(clusterLabel)s="$cluster", %(windowsExporterSelector)s, mode="idle"}[%(grafanaIntervalVar)s]))' % $._config
+          '1 - avg(rate(windows_cpu_time_total{%(clusterLabel)s="$cluster", %(envLabel)s="$env", %(windowsExporterSelector)s, mode="idle"}[%(grafanaIntervalVar)s]))' % $._config
         )
         + stat.gridPos.withW(4)
         + stat.gridPos.withH(3),
@@ -131,7 +143,7 @@ local var = g.dashboard.variable;
         statPanel(
           'CPU Requests Commitment',
           'percentunit',
-          'sum(kube_pod_windows_container_resource_cpu_cores_request{%(clusterLabel)s="$cluster"}) / sum(node:windows_node_num_cpu:sum{%(clusterLabel)s="$cluster"})' % $._config
+          'sum(kube_pod_windows_container_resource_cpu_cores_request{%(clusterLabel)s="$cluster", %(envLabel)s="$env"}) / sum(node:windows_node_num_cpu:sum{%(clusterLabel)s="$cluster", %(envLabel)s="$env"})' % $._config
         )
         + stat.gridPos.withW(4)
         + stat.gridPos.withH(3),
@@ -139,7 +151,7 @@ local var = g.dashboard.variable;
         statPanel(
           'CPU Limits Commitment',
           'percentunit',
-          'sum(kube_pod_windows_container_resource_cpu_cores_limit{%(clusterLabel)s="$cluster"}) / sum(node:windows_node_num_cpu:sum{%(clusterLabel)s="$cluster"})' % $._config
+          'sum(kube_pod_windows_container_resource_cpu_cores_limit{%(clusterLabel)s="$cluster", %(envLabel)s="$env"}) / sum(node:windows_node_num_cpu:sum{%(clusterLabel)s="$cluster", %(envLabel)s="$env"})' % $._config
         )
         + stat.gridPos.withW(4)
         + stat.gridPos.withH(3),
@@ -147,7 +159,7 @@ local var = g.dashboard.variable;
         statPanel(
           'Memory Utilisation',
           'percentunit',
-          '1 - sum(:windows_node_memory_MemFreeCached_bytes:sum{%(clusterLabel)s="$cluster"}) / sum(:windows_node_memory_MemTotal_bytes:sum{%(clusterLabel)s="$cluster"})' % $._config
+          '1 - sum(:windows_node_memory_MemFreeCached_bytes:sum{%(clusterLabel)s="$cluster", %(envLabel)s="$env"}) / sum(:windows_node_memory_MemTotal_bytes:sum{%(clusterLabel)s="$cluster", %(envLabel)s="$env"})' % $._config
         )
         + stat.gridPos.withW(4)
         + stat.gridPos.withH(3),
@@ -155,7 +167,7 @@ local var = g.dashboard.variable;
         statPanel(
           'Memory Requests Commitment',
           'percentunit',
-          'sum(kube_pod_windows_container_resource_memory_request{%(clusterLabel)s="$cluster"}) / sum(:windows_node_memory_MemTotal_bytes:sum{%(clusterLabel)s="$cluster"})' % $._config
+          'sum(kube_pod_windows_container_resource_memory_request{%(clusterLabel)s="$cluster", %(envLabel)s="$env"}) / sum(:windows_node_memory_MemTotal_bytes:sum{%(clusterLabel)s="$cluster", %(envLabel)s="$env"})' % $._config
         )
         + stat.gridPos.withW(4)
         + stat.gridPos.withH(3),
@@ -163,7 +175,7 @@ local var = g.dashboard.variable;
         statPanel(
           'Memory Limits Commitment',
           'percentunit',
-          'sum(kube_pod_windows_container_resource_memory_limit{%(clusterLabel)s="$cluster"}) / sum(:windows_node_memory_MemTotal_bytes:sum{%(clusterLabel)s="$cluster"})' % $._config
+          'sum(kube_pod_windows_container_resource_memory_limit{%(clusterLabel)s="$cluster", %(envLabel)s="$env"}) / sum(:windows_node_memory_MemTotal_bytes:sum{%(clusterLabel)s="$cluster", %(envLabel)s="$env"})' % $._config
         )
         + stat.gridPos.withW(4)
         + stat.gridPos.withH(3),
@@ -172,30 +184,30 @@ local var = g.dashboard.variable;
         + tsPanel.queryOptions.withTargets([
           prometheus.new(
             '${datasource}',
-            'sum(namespace_pod_container:windows_container_cpu_usage_seconds_total:sum_rate{%(clusterLabel)s="$cluster"}) by (namespace)' % $._config
+            'sum(namespace_pod_container:windows_container_cpu_usage_seconds_total:sum_rate{%(clusterLabel)s="$cluster", %(envLabel)s="$env"}) by (namespace)' % $._config
           )
           + prometheus.withLegendFormat('__auto'),
         ]),
 
         table.new('CPU Quota')
         + table.queryOptions.withTargets([
-          prometheus.new('${datasource}', 'sum(namespace_pod_container:windows_container_cpu_usage_seconds_total:sum_rate{%(clusterLabel)s="$cluster"}) by (namespace)' % $._config)
+          prometheus.new('${datasource}', 'sum(namespace_pod_container:windows_container_cpu_usage_seconds_total:sum_rate{%(clusterLabel)s="$cluster", %(envLabel)s="$env"}) by (namespace)' % $._config)
           + prometheus.withInstant(true)
           + prometheus.withFormat('table'),
 
-          prometheus.new('${datasource}', 'sum(kube_pod_windows_container_resource_cpu_cores_request{%(clusterLabel)s="$cluster"}) by (namespace)' % $._config)
+          prometheus.new('${datasource}', 'sum(kube_pod_windows_container_resource_cpu_cores_request{%(clusterLabel)s="$cluster", %(envLabel)s="$env"}) by (namespace)' % $._config)
           + prometheus.withInstant(true)
           + prometheus.withFormat('table'),
 
-          prometheus.new('${datasource}', 'sum(namespace_pod_container:windows_container_cpu_usage_seconds_total:sum_rate{%(clusterLabel)s="$cluster"}) by (namespace) / sum(kube_pod_windows_container_resource_cpu_cores_request{%(clusterLabel)s="$cluster"}) by (namespace)' % $._config)
+          prometheus.new('${datasource}', 'sum(namespace_pod_container:windows_container_cpu_usage_seconds_total:sum_rate{%(clusterLabel)s="$cluster", %(envLabel)s="$env"}) by (namespace) / sum(kube_pod_windows_container_resource_cpu_cores_request{%(clusterLabel)s="$cluster", %(envLabel)s="$env"}) by (namespace)' % $._config)
           + prometheus.withInstant(true)
           + prometheus.withFormat('table'),
 
-          prometheus.new('${datasource}', 'sum(kube_pod_windows_container_resource_cpu_cores_limit{%(clusterLabel)s="$cluster"}) by (namespace)' % $._config)
+          prometheus.new('${datasource}', 'sum(kube_pod_windows_container_resource_cpu_cores_limit{%(clusterLabel)s="$cluster", %(envLabel)s="$env"}) by (namespace)' % $._config)
           + prometheus.withInstant(true)
           + prometheus.withFormat('table'),
 
-          prometheus.new('${datasource}', 'sum(namespace_pod_container:windows_container_cpu_usage_seconds_total:sum_rate{%(clusterLabel)s="$cluster"}) by (namespace) / sum(kube_pod_windows_container_resource_cpu_cores_limit{%(clusterLabel)s="$cluster"}) by (namespace)' % $._config)
+          prometheus.new('${datasource}', 'sum(namespace_pod_container:windows_container_cpu_usage_seconds_total:sum_rate{%(clusterLabel)s="$cluster", %(envLabel)s="$env"}) by (namespace) / sum(kube_pod_windows_container_resource_cpu_cores_limit{%(clusterLabel)s="$cluster", %(envLabel)s="$env"}) by (namespace)' % $._config)
           + prometheus.withInstant(true)
           + prometheus.withFormat('table'),
         ])
@@ -273,7 +285,7 @@ local var = g.dashboard.variable;
         + tsPanel.queryOptions.withTargets([
           prometheus.new(
             '${datasource}',
-            'sum(windows_container_private_working_set_usage{%(clusterLabel)s="$cluster"}) by (namespace)' % $._config
+            'sum(windows_container_private_working_set_usage{%(clusterLabel)s="$cluster", %(envLabel)s="$env"}) by (namespace)' % $._config
           )
           + prometheus.withLegendFormat('__auto'),
         ]),
@@ -281,23 +293,23 @@ local var = g.dashboard.variable;
         table.new('Memory Requests by Namespace')
         + table.standardOptions.withUnit('bytes')
         + table.queryOptions.withTargets([
-          prometheus.new('${datasource}', 'sum(windows_container_private_working_set_usage{%(clusterLabel)s="$cluster"}) by (namespace)' % $._config)
+          prometheus.new('${datasource}', 'sum(windows_container_private_working_set_usage{%(clusterLabel)s="$cluster", %(envLabel)s="$env"}) by (namespace)' % $._config)
           + prometheus.withInstant(true)
           + prometheus.withFormat('table'),
 
-          prometheus.new('${datasource}', 'sum(kube_pod_windows_container_resource_memory_request{%(clusterLabel)s="$cluster"}) by (namespace)' % $._config)
+          prometheus.new('${datasource}', 'sum(kube_pod_windows_container_resource_memory_request{%(clusterLabel)s="$cluster", %(envLabel)s="$env"}) by (namespace)' % $._config)
           + prometheus.withInstant(true)
           + prometheus.withFormat('table'),
 
-          prometheus.new('${datasource}', 'sum(windows_container_private_working_set_usage{%(clusterLabel)s="$cluster"}) by (namespace) / sum(kube_pod_windows_container_resource_memory_request{%(clusterLabel)s="$cluster"}) by (namespace)' % $._config)
+          prometheus.new('${datasource}', 'sum(windows_container_private_working_set_usage{%(clusterLabel)s="$cluster", %(envLabel)s="$env"}) by (namespace) / sum(kube_pod_windows_container_resource_memory_request{%(clusterLabel)s="$cluster", %(envLabel)s="$env"}) by (namespace)' % $._config)
           + prometheus.withInstant(true)
           + prometheus.withFormat('table'),
 
-          prometheus.new('${datasource}', 'sum(kube_pod_windows_container_resource_memory_limit{%(clusterLabel)s="$cluster"}) by (namespace)' % $._config)
+          prometheus.new('${datasource}', 'sum(kube_pod_windows_container_resource_memory_limit{%(clusterLabel)s="$cluster", %(envLabel)s="$env"}) by (namespace)' % $._config)
           + prometheus.withInstant(true)
           + prometheus.withFormat('table'),
 
-          prometheus.new('${datasource}', 'sum(windows_container_private_working_set_usage{%(clusterLabel)s="$cluster"}) by (namespace) / sum(kube_pod_windows_container_resource_memory_limit{%(clusterLabel)s="$cluster"}) by (namespace)' % $._config)
+          prometheus.new('${datasource}', 'sum(windows_container_private_working_set_usage{%(clusterLabel)s="$cluster", %(envLabel)s="$env"}) by (namespace) / sum(kube_pod_windows_container_resource_memory_limit{%(clusterLabel)s="$cluster", %(envLabel)s="$env"}) by (namespace)' % $._config)
           + prometheus.withInstant(true)
           + prometheus.withFormat('table'),
         ])
@@ -414,7 +426,7 @@ local var = g.dashboard.variable;
       + g.dashboard.time.withFrom('now-1h')
       + g.dashboard.time.withTo('now')
       + g.dashboard.withRefresh($._config.grafanaK8s.refresh)
-      + g.dashboard.withVariables([variables.datasource, variables.cluster])
+      + g.dashboard.withVariables([variables.datasource, variables.cluster, variables.env])
       + g.dashboard.withPanels(g.util.grid.wrapPanels(panels, panelWidth=24, panelHeight=7)),
 
     'k8s-resources-windows-namespace.json':
@@ -423,30 +435,30 @@ local var = g.dashboard.variable;
         + tsPanel.queryOptions.withTargets([
           prometheus.new(
             '${datasource}',
-            'sum(namespace_pod_container:windows_container_cpu_usage_seconds_total:sum_rate{%(clusterLabel)s="$cluster", namespace="$namespace"}) by (pod)' % $._config
+            'sum(namespace_pod_container:windows_container_cpu_usage_seconds_total:sum_rate{%(clusterLabel)s="$cluster", %(envLabel)s="$env", namespace="$namespace"}) by (pod)' % $._config
           )
           + prometheus.withLegendFormat('__auto'),
         ]),
 
         table.new('CPU Quota')
         + table.queryOptions.withTargets([
-          prometheus.new('${datasource}', 'sum(namespace_pod_container:windows_container_cpu_usage_seconds_total:sum_rate{%(clusterLabel)s="$cluster", namespace="$namespace"}) by (pod)' % $._config)
+          prometheus.new('${datasource}', 'sum(namespace_pod_container:windows_container_cpu_usage_seconds_total:sum_rate{%(clusterLabel)s="$cluster", %(envLabel)s="$env", namespace="$namespace"}) by (pod)' % $._config)
           + prometheus.withInstant(true)
           + prometheus.withFormat('table'),
 
-          prometheus.new('${datasource}', 'sum(kube_pod_windows_container_resource_cpu_cores_request{%(clusterLabel)s="$cluster", namespace="$namespace"}) by (pod)' % $._config)
+          prometheus.new('${datasource}', 'sum(kube_pod_windows_container_resource_cpu_cores_request{%(clusterLabel)s="$cluster", %(envLabel)s="$env", namespace="$namespace"}) by (pod)' % $._config)
           + prometheus.withInstant(true)
           + prometheus.withFormat('table'),
 
-          prometheus.new('${datasource}', 'sum(namespace_pod_container:windows_container_cpu_usage_seconds_total:sum_rate{%(clusterLabel)s="$cluster", namespace="$namespace"}) by (pod) / sum(kube_pod_windows_container_resource_cpu_cores_request{%(clusterLabel)s="$cluster", namespace="$namespace"}) by (pod)' % $._config)
+          prometheus.new('${datasource}', 'sum(namespace_pod_container:windows_container_cpu_usage_seconds_total:sum_rate{%(clusterLabel)s="$cluster", %(envLabel)s="$env", namespace="$namespace"}) by (pod) / sum(kube_pod_windows_container_resource_cpu_cores_request{%(clusterLabel)s="$cluster", %(envLabel)s="$env", namespace="$namespace"}) by (pod)' % $._config)
           + prometheus.withInstant(true)
           + prometheus.withFormat('table'),
 
-          prometheus.new('${datasource}', 'sum(kube_pod_windows_container_resource_cpu_cores_limit{%(clusterLabel)s="$cluster", namespace="$namespace"}) by (pod)' % $._config)
+          prometheus.new('${datasource}', 'sum(kube_pod_windows_container_resource_cpu_cores_limit{%(clusterLabel)s="$cluster", %(envLabel)s="$env", namespace="$namespace"}) by (pod)' % $._config)
           + prometheus.withInstant(true)
           + prometheus.withFormat('table'),
 
-          prometheus.new('${datasource}', 'sum(namespace_pod_container:windows_container_cpu_usage_seconds_total:sum_rate{%(clusterLabel)s="$cluster", namespace="$namespace"}) by (pod) / sum(kube_pod_windows_container_resource_cpu_cores_limit{%(clusterLabel)s="$cluster", namespace="$namespace"}) by (pod)' % $._config)
+          prometheus.new('${datasource}', 'sum(namespace_pod_container:windows_container_cpu_usage_seconds_total:sum_rate{%(clusterLabel)s="$cluster", %(envLabel)s="$env", namespace="$namespace"}) by (pod) / sum(kube_pod_windows_container_resource_cpu_cores_limit{%(clusterLabel)s="$cluster", %(envLabel)s="$env", namespace="$namespace"}) by (pod)' % $._config)
           + prometheus.withInstant(true)
           + prometheus.withFormat('table'),
         ])
@@ -524,7 +536,7 @@ local var = g.dashboard.variable;
         + tsPanel.queryOptions.withTargets([
           prometheus.new(
             '${datasource}',
-            'sum(windows_container_private_working_set_usage{%(clusterLabel)s="$cluster", namespace="$namespace"}) by (pod)' % $._config
+            'sum(windows_container_private_working_set_usage{%(clusterLabel)s="$cluster", %(envLabel)s="$env", namespace="$namespace"}) by (pod)' % $._config
           )
           + prometheus.withLegendFormat('__auto'),
         ]),
@@ -532,23 +544,23 @@ local var = g.dashboard.variable;
         table.new('Memory Quota')
         + table.standardOptions.withUnit('bytes')
         + table.queryOptions.withTargets([
-          prometheus.new('${datasource}', 'sum(windows_container_private_working_set_usage{%(clusterLabel)s="$cluster", namespace="$namespace"}) by (pod)' % $._config)
+          prometheus.new('${datasource}', 'sum(windows_container_private_working_set_usage{%(clusterLabel)s="$cluster", %(envLabel)s="$env", namespace="$namespace"}) by (pod)' % $._config)
           + prometheus.withInstant(true)
           + prometheus.withFormat('table'),
 
-          prometheus.new('${datasource}', 'sum(kube_pod_windows_container_resource_memory_request{%(clusterLabel)s="$cluster", namespace="$namespace"}) by (pod)' % $._config)
+          prometheus.new('${datasource}', 'sum(kube_pod_windows_container_resource_memory_request{%(clusterLabel)s="$cluster", %(envLabel)s="$env", namespace="$namespace"}) by (pod)' % $._config)
           + prometheus.withInstant(true)
           + prometheus.withFormat('table'),
 
-          prometheus.new('${datasource}', 'sum(windows_container_private_working_set_usage{%(clusterLabel)s="$cluster", namespace="$namespace"}) by (pod) / sum(kube_pod_windows_container_resource_memory_request{%(clusterLabel)s="$cluster", namespace="$namespace"}) by (pod)' % $._config)
+          prometheus.new('${datasource}', 'sum(windows_container_private_working_set_usage{%(clusterLabel)s="$cluster", %(envLabel)s="$env", namespace="$namespace"}) by (pod) / sum(kube_pod_windows_container_resource_memory_request{%(clusterLabel)s="$cluster", %(envLabel)s="$env", namespace="$namespace"}) by (pod)' % $._config)
           + prometheus.withInstant(true)
           + prometheus.withFormat('table'),
 
-          prometheus.new('${datasource}', 'sum(kube_pod_windows_container_resource_memory_limit{%(clusterLabel)s="$cluster", namespace="$namespace"}) by (pod)' % $._config)
+          prometheus.new('${datasource}', 'sum(kube_pod_windows_container_resource_memory_limit{%(clusterLabel)s="$cluster", %(envLabel)s="$env", namespace="$namespace"}) by (pod)' % $._config)
           + prometheus.withInstant(true)
           + prometheus.withFormat('table'),
 
-          prometheus.new('${datasource}', 'sum(windows_container_private_working_set_usage{%(clusterLabel)s="$cluster", namespace="$namespace"}) by (pod) / sum(kube_pod_windows_container_resource_memory_limit{%(clusterLabel)s="$cluster", namespace="$namespace"}) by (pod)' % $._config)
+          prometheus.new('${datasource}', 'sum(windows_container_private_working_set_usage{%(clusterLabel)s="$cluster", %(envLabel)s="$env", namespace="$namespace"}) by (pod) / sum(kube_pod_windows_container_resource_memory_limit{%(clusterLabel)s="$cluster", %(envLabel)s="$env", namespace="$namespace"}) by (pod)' % $._config)
           + prometheus.withInstant(true)
           + prometheus.withFormat('table'),
         ])
@@ -629,7 +641,7 @@ local var = g.dashboard.variable;
       + g.dashboard.time.withFrom('now-1h')
       + g.dashboard.time.withTo('now')
       + g.dashboard.withRefresh($._config.grafanaK8s.refresh)
-      + g.dashboard.withVariables([variables.datasource, variables.cluster, variables.namespace])
+      + g.dashboard.withVariables([variables.datasource, variables.cluster, variables.env, variables.namespace])
       + g.dashboard.withPanels(g.util.grid.wrapPanels(panels, panelWidth=24, panelHeight=7)),
 
     'k8s-resources-windows-pod.json':
@@ -638,30 +650,30 @@ local var = g.dashboard.variable;
         + tsPanel.queryOptions.withTargets([
           prometheus.new(
             '${datasource}',
-            'sum(namespace_pod_container:windows_container_cpu_usage_seconds_total:sum_rate{%(clusterLabel)s="$cluster", namespace="$namespace", pod="$pod"}) by (container)' % $._config
+            'sum(namespace_pod_container:windows_container_cpu_usage_seconds_total:sum_rate{%(clusterLabel)s="$cluster", %(envLabel)s="$env", namespace="$namespace", pod="$pod"}) by (container)' % $._config
           )
           + prometheus.withLegendFormat('__auto'),
         ]),
 
         table.new('CPU Quota')
         + table.queryOptions.withTargets([
-          prometheus.new('${datasource}', 'sum(namespace_pod_container:windows_container_cpu_usage_seconds_total:sum_rate{%(clusterLabel)s="$cluster", namespace="$namespace", pod="$pod"}) by (container)' % $._config)
+          prometheus.new('${datasource}', 'sum(namespace_pod_container:windows_container_cpu_usage_seconds_total:sum_rate{%(clusterLabel)s="$cluster", %(envLabel)s="$env", namespace="$namespace", pod="$pod"}) by (container)' % $._config)
           + prometheus.withInstant(true)
           + prometheus.withFormat('table'),
 
-          prometheus.new('${datasource}', 'sum(kube_pod_windows_container_resource_cpu_cores_request{%(clusterLabel)s="$cluster", namespace="$namespace", pod="$pod"}) by (container)' % $._config)
+          prometheus.new('${datasource}', 'sum(kube_pod_windows_container_resource_cpu_cores_request{%(clusterLabel)s="$cluster", %(envLabel)s="$env", namespace="$namespace", pod="$pod"}) by (container)' % $._config)
           + prometheus.withInstant(true)
           + prometheus.withFormat('table'),
 
-          prometheus.new('${datasource}', 'sum(namespace_pod_container:windows_container_cpu_usage_seconds_total:sum_rate{%(clusterLabel)s="$cluster", namespace="$namespace", pod="$pod"}) by (container) / sum(kube_pod_windows_container_resource_cpu_cores_request{%(clusterLabel)s="$cluster", namespace="$namespace", pod="$pod"}) by (container)' % $._config)
+          prometheus.new('${datasource}', 'sum(namespace_pod_container:windows_container_cpu_usage_seconds_total:sum_rate{%(clusterLabel)s="$cluster", %(envLabel)s="$env", namespace="$namespace", pod="$pod"}) by (container) / sum(kube_pod_windows_container_resource_cpu_cores_request{%(clusterLabel)s="$cluster", %(envLabel)s="$env", namespace="$namespace", pod="$pod"}) by (container)' % $._config)
           + prometheus.withInstant(true)
           + prometheus.withFormat('table'),
 
-          prometheus.new('${datasource}', 'sum(kube_pod_windows_container_resource_cpu_cores_limit{%(clusterLabel)s="$cluster", namespace="$namespace", pod="$pod"}) by (container)' % $._config)
+          prometheus.new('${datasource}', 'sum(kube_pod_windows_container_resource_cpu_cores_limit{%(clusterLabel)s="$cluster", %(envLabel)s="$env", namespace="$namespace", pod="$pod"}) by (container)' % $._config)
           + prometheus.withInstant(true)
           + prometheus.withFormat('table'),
 
-          prometheus.new('${datasource}', 'sum(namespace_pod_container:windows_container_cpu_usage_seconds_total:sum_rate{%(clusterLabel)s="$cluster", namespace="$namespace", pod="$pod"}) by (container) / sum(kube_pod_windows_container_resource_cpu_cores_limit{%(clusterLabel)s="$cluster", namespace="$namespace", pod="$pod"}) by (container)' % $._config)
+          prometheus.new('${datasource}', 'sum(namespace_pod_container:windows_container_cpu_usage_seconds_total:sum_rate{%(clusterLabel)s="$cluster", %(envLabel)s="$env", namespace="$namespace", pod="$pod"}) by (container) / sum(kube_pod_windows_container_resource_cpu_cores_limit{%(clusterLabel)s="$cluster", %(envLabel)s="$env", namespace="$namespace", pod="$pod"}) by (container)' % $._config)
           + prometheus.withInstant(true)
           + prometheus.withFormat('table'),
         ])
@@ -739,7 +751,7 @@ local var = g.dashboard.variable;
         + tsPanel.queryOptions.withTargets([
           prometheus.new(
             '${datasource}',
-            'sum(windows_container_private_working_set_usage{%(clusterLabel)s="$cluster", namespace="$namespace", pod="$pod"}) by (container)' % $._config
+            'sum(windows_container_private_working_set_usage{%(clusterLabel)s="$cluster", %(envLabel)s="$env", namespace="$namespace", pod="$pod"}) by (container)' % $._config
           )
           + prometheus.withLegendFormat('__auto'),
         ]),
@@ -747,23 +759,23 @@ local var = g.dashboard.variable;
         table.new('Memory Quota')
         + table.standardOptions.withUnit('bytes')
         + table.queryOptions.withTargets([
-          prometheus.new('${datasource}', 'sum(windows_container_private_working_set_usage{%(clusterLabel)s="$cluster", namespace="$namespace", pod="$pod"}) by (container)' % $._config)
+          prometheus.new('${datasource}', 'sum(windows_container_private_working_set_usage{%(clusterLabel)s="$cluster", %(envLabel)s="$env", namespace="$namespace", pod="$pod"}) by (container)' % $._config)
           + prometheus.withInstant(true)
           + prometheus.withFormat('table'),
 
-          prometheus.new('${datasource}', 'sum(kube_pod_windows_container_resource_memory_request{%(clusterLabel)s="$cluster", namespace="$namespace", pod="$pod"}) by (container)' % $._config)
+          prometheus.new('${datasource}', 'sum(kube_pod_windows_container_resource_memory_request{%(clusterLabel)s="$cluster", %(envLabel)s="$env", namespace="$namespace", pod="$pod"}) by (container)' % $._config)
           + prometheus.withInstant(true)
           + prometheus.withFormat('table'),
 
-          prometheus.new('${datasource}', 'sum(windows_container_private_working_set_usage{%(clusterLabel)s="$cluster", namespace="$namespace", pod="$pod"}) by (container) / sum(kube_pod_windows_container_resource_memory_request{%(clusterLabel)s="$cluster", namespace="$namespace", pod="$pod"}) by (container)' % $._config)
+          prometheus.new('${datasource}', 'sum(windows_container_private_working_set_usage{%(clusterLabel)s="$cluster", %(envLabel)s="$env", namespace="$namespace", pod="$pod"}) by (container) / sum(kube_pod_windows_container_resource_memory_request{%(clusterLabel)s="$cluster", %(envLabel)s="$env", namespace="$namespace", pod="$pod"}) by (container)' % $._config)
           + prometheus.withInstant(true)
           + prometheus.withFormat('table'),
 
-          prometheus.new('${datasource}', 'sum(kube_pod_windows_container_resource_memory_limit{%(clusterLabel)s="$cluster", namespace="$namespace", pod="$pod"}) by (container)' % $._config)
+          prometheus.new('${datasource}', 'sum(kube_pod_windows_container_resource_memory_limit{%(clusterLabel)s="$cluster", %(envLabel)s="$env", namespace="$namespace", pod="$pod"}) by (container)' % $._config)
           + prometheus.withInstant(true)
           + prometheus.withFormat('table'),
 
-          prometheus.new('${datasource}', 'sum(windows_container_private_working_set_usage{%(clusterLabel)s="$cluster", namespace="$namespace", pod="$pod"}) by (container) / sum(kube_pod_windows_container_resource_memory_limit{%(clusterLabel)s="$cluster", namespace="$namespace", pod="$pod"}) by (container)' % $._config)
+          prometheus.new('${datasource}', 'sum(windows_container_private_working_set_usage{%(clusterLabel)s="$cluster", %(envLabel)s="$env", namespace="$namespace", pod="$pod"}) by (container) / sum(kube_pod_windows_container_resource_memory_limit{%(clusterLabel)s="$cluster", %(envLabel)s="$env", namespace="$namespace", pod="$pod"}) by (container)' % $._config)
           + prometheus.withInstant(true)
           + prometheus.withFormat('table'),
         ])
@@ -829,13 +841,13 @@ local var = g.dashboard.variable;
         + tsPanel.queryOptions.withTargets([
           prometheus.new(
             '${datasource}',
-            'sort_desc(sum by (container) (rate(windows_container_network_received_bytes_total{%(clusterLabel)s="$cluster", namespace="$namespace", pod="$pod"}[%(grafanaIntervalVar)s])))' % $._config
+            'sort_desc(sum by (container) (rate(windows_container_network_received_bytes_total{%(clusterLabel)s="$cluster", %(envLabel)s="$env", namespace="$namespace", pod="$pod"}[%(grafanaIntervalVar)s])))' % $._config
           )
           + prometheus.withLegendFormat('Received : {{ container }}'),
 
           prometheus.new(
             '${datasource}',
-            'sort_desc(sum by (container) (rate(windows_container_network_transmitted_bytes_total{%(clusterLabel)s="$cluster", namespace="$namespace", pod="$pod"}[%(grafanaIntervalVar)s])))' % $._config
+            'sort_desc(sum by (container) (rate(windows_container_network_transmitted_bytes_total{%(clusterLabel)s="$cluster", %(envLabel)s="$env", namespace="$namespace", pod="$pod"}[%(grafanaIntervalVar)s])))' % $._config
           )
           + prometheus.withLegendFormat('Transmitted : {{ container }}'),
         ]),
@@ -848,7 +860,7 @@ local var = g.dashboard.variable;
       + g.dashboard.time.withFrom('now-1h')
       + g.dashboard.time.withTo('now')
       + g.dashboard.withRefresh($._config.grafanaK8s.refresh)
-      + g.dashboard.withVariables([variables.datasource, variables.cluster, variables.namespace, variables.pod])
+      + g.dashboard.withVariables([variables.datasource, variables.cluster, variables.env, variables.namespace, variables.pod])
       + g.dashboard.withPanels(g.util.grid.wrapPanels(panels, panelWidth=24, panelHeight=7)),
 
     'k8s-windows-cluster-rsrc-use.json':
@@ -859,7 +871,7 @@ local var = g.dashboard.variable;
         + tsPanel.queryOptions.withTargets([
           prometheus.new(
             '${datasource}',
-            'node:windows_node_cpu_utilisation:avg1m{%(clusterLabel)s="$cluster"} * node:windows_node_num_cpu:sum{%(clusterLabel)s="$cluster"} / scalar(sum(node:windows_node_num_cpu:sum{%(clusterLabel)s="$cluster"}))' % $._config
+            'node:windows_node_cpu_utilisation:avg1m{%(clusterLabel)s="$cluster", %(envLabel)s="$env"} * node:windows_node_num_cpu:sum{%(clusterLabel)s="$cluster", %(envLabel)s="$env"} / scalar(sum(node:windows_node_num_cpu:sum{%(clusterLabel)s="$cluster", %(envLabel)s="$env"}))' % $._config
           )
           + prometheus.withLegendFormat('{{instance}}'),
         ]),
@@ -869,7 +881,7 @@ local var = g.dashboard.variable;
         + tsPanel.queryOptions.withTargets([
           prometheus.new(
             '${datasource}',
-            'node:windows_node_memory_utilisation:ratio{%(clusterLabel)s="$cluster"}' % $._config
+            'node:windows_node_memory_utilisation:ratio{%(clusterLabel)s="$cluster", %(envLabel)s="$env"}' % $._config
           )
           + prometheus.withLegendFormat('{{instance}}'),
         ]),
@@ -879,7 +891,7 @@ local var = g.dashboard.variable;
         + tsPanel.queryOptions.withTargets([
           prometheus.new(
             '${datasource}',
-            'node:windows_node_memory_swap_io_pages:irate{%(clusterLabel)s="$cluster"}' % $._config
+            'node:windows_node_memory_swap_io_pages:irate{%(clusterLabel)s="$cluster", %(envLabel)s="$env"}' % $._config
           )
           + prometheus.withLegendFormat('{{instance}}'),
         ]),
@@ -890,7 +902,7 @@ local var = g.dashboard.variable;
         + tsPanel.queryOptions.withTargets([
           prometheus.new(
             '${datasource}',
-            'node:windows_node_disk_utilisation:avg_irate{%(clusterLabel)s="$cluster"} / scalar(node:windows_node:sum{%(clusterLabel)s="$cluster"})' % $._config
+            'node:windows_node_disk_utilisation:avg_irate{%(clusterLabel)s="$cluster", %(envLabel)s="$env"} / scalar(node:windows_node:sum{%(clusterLabel)s="$cluster", %(envLabel)s="$env"})' % $._config
           )
           + prometheus.withLegendFormat('{{instance}}'),
         ]),
@@ -900,7 +912,7 @@ local var = g.dashboard.variable;
         + tsPanel.queryOptions.withTargets([
           prometheus.new(
             '${datasource}',
-            'node:windows_node_net_utilisation:sum_irate{%(clusterLabel)s="$cluster"}' % $._config
+            'node:windows_node_net_utilisation:sum_irate{%(clusterLabel)s="$cluster", %(envLabel)s="$env"}' % $._config
           )
           + prometheus.withLegendFormat('{{instance}}'),
         ]),
@@ -910,7 +922,7 @@ local var = g.dashboard.variable;
         + tsPanel.queryOptions.withTargets([
           prometheus.new(
             '${datasource}',
-            'node:windows_node_net_saturation:sum_irate{%(clusterLabel)s="$cluster"}' % $._config
+            'node:windows_node_net_saturation:sum_irate{%(clusterLabel)s="$cluster", %(envLabel)s="$env"}' % $._config
           )
           + prometheus.withLegendFormat('{{instance}}'),
         ]),
@@ -921,7 +933,7 @@ local var = g.dashboard.variable;
         + tsPanel.queryOptions.withTargets([
           prometheus.new(
             '${datasource}',
-            'sum by (instance)(node:windows_node_filesystem_usage:{%(clusterLabel)s="$cluster"})' % $._config
+            'sum by (instance)(node:windows_node_filesystem_usage:{%(clusterLabel)s="$cluster", %(envLabel)s="$env"})' % $._config
           )
           + prometheus.withLegendFormat('{{instance}}'),
         ]),
@@ -934,7 +946,7 @@ local var = g.dashboard.variable;
       + g.dashboard.time.withFrom('now-1h')
       + g.dashboard.time.withTo('now')
       + g.dashboard.withRefresh($._config.grafanaK8s.refresh)
-      + g.dashboard.withVariables([variables.datasource, variables.cluster])
+      + g.dashboard.withVariables([variables.datasource, variables.cluster, variables.env])
       + g.dashboard.withPanels(g.util.grid.wrapPanels(panels, panelWidth=12, panelHeight=7)),
 
     'k8s-windows-node-rsrc-use.json':
@@ -944,7 +956,7 @@ local var = g.dashboard.variable;
         + tsPanel.queryOptions.withTargets([
           prometheus.new(
             '${datasource}',
-            'node:windows_node_cpu_utilisation:avg1m{%(clusterLabel)s="$cluster", instance="$instance"}' % $._config
+            'node:windows_node_cpu_utilisation:avg1m{%(clusterLabel)s="$cluster", %(envLabel)s="$env", instance="$instance"}' % $._config
           )
           + prometheus.withLegendFormat('Utilisation'),
         ]),
@@ -954,7 +966,7 @@ local var = g.dashboard.variable;
         + tsPanel.queryOptions.withTargets([
           prometheus.new(
             '${datasource}',
-            'sum by (core) (irate(windows_cpu_time_total{%(clusterLabel)s="$cluster", %(windowsExporterSelector)s, mode!="idle", instance="$instance"}[%(grafanaIntervalVar)s]))' % $._config
+            'sum by (core) (irate(windows_cpu_time_total{%(clusterLabel)s="$cluster", %(envLabel)s="$env", %(windowsExporterSelector)s, mode!="idle", instance="$instance"}[%(grafanaIntervalVar)s]))' % $._config
           )
           + prometheus.withLegendFormat('{{core}}'),
         ]),
@@ -965,7 +977,7 @@ local var = g.dashboard.variable;
         + tsPanel.queryOptions.withTargets([
           prometheus.new(
             '${datasource}',
-            'node:windows_node_memory_utilisation:{%(clusterLabel)s="$cluster", instance="$instance"}' % $._config
+            'node:windows_node_memory_utilisation:{%(clusterLabel)s="$cluster", %(envLabel)s="$env", instance="$instance"}' % $._config
           )
           + prometheus.withLegendFormat('Memory'),
         ]),
@@ -978,8 +990,8 @@ local var = g.dashboard.variable;
             '${datasource}',
             |||
               max(
-                windows_os_visible_memory_bytes{%(clusterLabel)s="$cluster", %(windowsExporterSelector)s, instance="$instance"}
-                - windows_memory_available_bytes{%(clusterLabel)s="$cluster", %(windowsExporterSelector)s, instance="$instance"}
+                windows_os_visible_memory_bytes{%(clusterLabel)s="$cluster", %(envLabel)s="$env", %(windowsExporterSelector)s, instance="$instance"}
+                - windows_memory_available_bytes{%(clusterLabel)s="$cluster", %(envLabel)s="$env", %(windowsExporterSelector)s, instance="$instance"}
               )
             ||| % $._config
           )
@@ -987,13 +999,13 @@ local var = g.dashboard.variable;
 
           prometheus.new(
             '${datasource}',
-            'max(node:windows_node_memory_totalCached_bytes:sum{%(clusterLabel)s="$cluster", instance="$instance"})' % $._config
+            'max(node:windows_node_memory_totalCached_bytes:sum{%(clusterLabel)s="$cluster", %(envLabel)s="$env", instance="$instance"})' % $._config
           )
           + prometheus.withLegendFormat('memory cached'),
 
           prometheus.new(
             '${datasource}',
-            'max(windows_memory_available_bytes{%(clusterLabel)s="$cluster", %(windowsExporterSelector)s, instance="$instance"})' % $._config
+            'max(windows_memory_available_bytes{%(clusterLabel)s="$cluster", %(envLabel)s="$env", %(windowsExporterSelector)s, instance="$instance"})' % $._config
           )
           + prometheus.withLegendFormat('memory free'),
         ]),
@@ -1004,7 +1016,7 @@ local var = g.dashboard.variable;
         + tsPanel.queryOptions.withTargets([
           prometheus.new(
             '${datasource}',
-            'node:windows_node_memory_swap_io_pages:irate{%(clusterLabel)s="$cluster", instance="$instance"}' % $._config
+            'node:windows_node_memory_swap_io_pages:irate{%(clusterLabel)s="$cluster", %(envLabel)s="$env", instance="$instance"}' % $._config
           )
           + prometheus.withLegendFormat('Swap IO'),
         ]),
@@ -1014,7 +1026,7 @@ local var = g.dashboard.variable;
         + tsPanel.queryOptions.withTargets([
           prometheus.new(
             '${datasource}',
-            'node:windows_node_disk_utilisation:avg_irate{%(clusterLabel)s="$cluster", instance="$instance"}' % $._config
+            'node:windows_node_disk_utilisation:avg_irate{%(clusterLabel)s="$cluster", %(envLabel)s="$env", instance="$instance"}' % $._config
           )
           + prometheus.withLegendFormat('Utilisation'),
         ]),
@@ -1024,19 +1036,19 @@ local var = g.dashboard.variable;
         + tsPanel.queryOptions.withTargets([
           prometheus.new(
             '${datasource}',
-            'max(rate(windows_logical_disk_read_bytes_total{%(clusterLabel)s="$cluster", %(windowsExporterSelector)s, instance="$instance"}[%(grafanaIntervalVar)s]))' % $._config
+            'max(rate(windows_logical_disk_read_bytes_total{%(clusterLabel)s="$cluster", %(envLabel)s="$env", %(windowsExporterSelector)s, instance="$instance"}[%(grafanaIntervalVar)s]))' % $._config
           )
           + prometheus.withLegendFormat('read'),
 
           prometheus.new(
             '${datasource}',
-            'max(rate(windows_logical_disk_write_bytes_total{%(clusterLabel)s="$cluster", %(windowsExporterSelector)s, instance="$instance"}[%(grafanaIntervalVar)s]))' % $._config
+            'max(rate(windows_logical_disk_write_bytes_total{%(clusterLabel)s="$cluster", %(envLabel)s="$env", %(windowsExporterSelector)s, instance="$instance"}[%(grafanaIntervalVar)s]))' % $._config
           )
           + prometheus.withLegendFormat('written'),
 
           prometheus.new(
             '${datasource}',
-            'max(rate(windows_logical_disk_read_seconds_total{%(clusterLabel)s="$cluster", %(windowsExporterSelector)s,  instance="$instance"}[%(grafanaIntervalVar)s]) + rate(windows_logical_disk_write_seconds_total{%(clusterLabel)s="$cluster", %(windowsExporterSelector)s, instance="$instance"}[%(grafanaIntervalVar)s]))' % $._config
+            'max(rate(windows_logical_disk_read_seconds_total{%(clusterLabel)s="$cluster", %(envLabel)s="$env", %(windowsExporterSelector)s,  instance="$instance"}[%(grafanaIntervalVar)s]) + rate(windows_logical_disk_write_seconds_total{%(clusterLabel)s="$cluster", %(envLabel)s="$env", %(windowsExporterSelector)s, instance="$instance"}[%(grafanaIntervalVar)s]))' % $._config
           )
           + prometheus.withLegendFormat('io time'),
         ])
@@ -1061,7 +1073,7 @@ local var = g.dashboard.variable;
         + tsPanel.queryOptions.withTargets([
           prometheus.new(
             '${datasource}',
-            'node:windows_node_filesystem_usage:{%(clusterLabel)s="$cluster", instance="$instance"}' % $._config
+            'node:windows_node_filesystem_usage:{%(clusterLabel)s="$cluster", %(envLabel)s="$env", instance="$instance"}' % $._config
           )
           + prometheus.withLegendFormat('{{volume}}'),
         ]),
@@ -1071,7 +1083,7 @@ local var = g.dashboard.variable;
         + tsPanel.queryOptions.withTargets([
           prometheus.new(
             '${datasource}',
-            'node:windows_node_net_utilisation:sum_irate{%(clusterLabel)s="$cluster", instance="$instance"}' % $._config
+            'node:windows_node_net_utilisation:sum_irate{%(clusterLabel)s="$cluster", %(envLabel)s="$env", instance="$instance"}' % $._config
           )
           + prometheus.withLegendFormat('Utilisation'),
         ]),
@@ -1081,7 +1093,7 @@ local var = g.dashboard.variable;
         + tsPanel.queryOptions.withTargets([
           prometheus.new(
             '${datasource}',
-            'node:windows_node_net_saturation:sum_irate{%(clusterLabel)s="$cluster", instance="$instance"}' % $._config
+            'node:windows_node_net_saturation:sum_irate{%(clusterLabel)s="$cluster", %(envLabel)s="$env", instance="$instance"}' % $._config
           )
           + prometheus.withLegendFormat('Saturation'),
         ]),
@@ -1094,7 +1106,7 @@ local var = g.dashboard.variable;
       + g.dashboard.time.withFrom('now-1h')
       + g.dashboard.time.withTo('now')
       + g.dashboard.withRefresh($._config.grafanaK8s.refresh)
-      + g.dashboard.withVariables([variables.datasource, variables.cluster, variables.instance])
+      + g.dashboard.withVariables([variables.datasource, variables.cluster, variables.env, variables.instance])
       + g.dashboard.withPanels(g.util.grid.wrapPanels(panels, panelWidth=12, panelHeight=7)),
   },
 }

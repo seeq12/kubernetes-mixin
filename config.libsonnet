@@ -91,8 +91,9 @@
     },
 
     // Opt-in to multiCluster dashboards by overriding this and the clusterLabel.
-    showMultiCluster: false,
+    showMultiCluster: true,
     clusterLabel: 'cluster',
+    envLabel: 'env',
 
     namespaceLabel: 'namespace',
 

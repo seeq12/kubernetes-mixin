@@ -45,6 +45,18 @@ local var = g.dashboard.variable;
                 value: $._config.datasourceName,
               },
             },
+
+          env:
+            var.query.new('env')
+            + var.query.withDatasourceFromVariable(self.datasource)
+            + var.query.queryTypes.withLabelValues(
+              $._config.envLabel,
+              'up{%(kubeStateMetricsSelector)s}' % $._config,
+            )
+            + var.query.generalOptions.withLabel('env')
+            + var.query.refresh.onTime()
+            + var.query.generalOptions.showOnDashboard.withLabelAndValue()
+            + var.query.withSort(type='alphabetical'),
         };
 
         local links = {
@@ -68,31 +80,31 @@ local var = g.dashboard.variable;
             statPanel(
               'CPU Requests Commitment',
               'percentunit',
-              'sum(kube_pod_container_resource_requests{%(kubeStateMetricsSelector)s, resource="cpu"}) / sum(kube_node_status_allocatable{%(kubeStateMetricsSelector)s, resource="cpu"})' % $._config
+              'sum(kube_pod_container_resource_requests{%(kubeStateMetricsSelector)s, %(envLabel)s="$env", resource="cpu"}) / sum(kube_node_status_allocatable{%(kubeStateMetricsSelector)s, %(envLabel)s="$env", resource="cpu"})' % $._config
             ),
 
             statPanel(
               'CPU Limits Commitment',
               'percentunit',
-              'sum(kube_pod_container_resource_limits{%(kubeStateMetricsSelector)s, resource="cpu"}) / sum(kube_node_status_allocatable{%(kubeStateMetricsSelector)s, resource="cpu"})' % $._config
+              'sum(kube_pod_container_resource_limits{%(kubeStateMetricsSelector)s, %(envLabel)s="$env", resource="cpu"}) / sum(kube_node_status_allocatable{%(kubeStateMetricsSelector)s, %(envLabel)s="$env", resource="cpu"})' % $._config
             ),
 
             statPanel(
               'Memory Utilisation',
               'percentunit',
-              '1 - sum(:node_memory_MemAvailable_bytes:sum) / sum(node_memory_MemTotal_bytes{%(nodeExporterSelector)s})' % $._config
+              '1 - sum(:node_memory_MemAvailable_bytes:sum) / sum(node_memory_MemTotal_bytes{%(nodeExporterSelector)s, %(envLabel)s="$env"})' % $._config
             ),
 
             statPanel(
               'Memory Requests Commitment',
               'percentunit',
-              'sum(kube_pod_container_resource_requests{%(kubeStateMetricsSelector)s, resource="memory"}) / sum(kube_node_status_allocatable{%(kubeStateMetricsSelector)s, resource="memory"})' % $._config
+              'sum(kube_pod_container_resource_requests{%(kubeStateMetricsSelector)s, %(envLabel)s="$env", resource="memory"}) / sum(kube_node_status_allocatable{%(kubeStateMetricsSelector)s, %(envLabel)s="$env", resource="memory"})' % $._config
             ),
 
             statPanel(
               'Memory Limits Commitment',
               'percentunit',
-              'sum(kube_pod_container_resource_limits{%(kubeStateMetricsSelector)s, resource="memory"}) / sum(kube_node_status_allocatable{%(kubeStateMetricsSelector)s, resource="memory"})' % $._config
+              'sum(kube_pod_container_resource_limits{%(kubeStateMetricsSelector)s, %(envLabel)s="$env", resource="memory"}) / sum(kube_node_status_allocatable{%(kubeStateMetricsSelector)s, %(envLabel)s="$env", resource="memory"})' % $._config
             ),
           ],
 
@@ -110,16 +122,16 @@ local var = g.dashboard.variable;
               prometheus.new('${datasource}', 'sum(node_namespace_pod_container:container_cpu_usage_seconds_total:sum_irate) by (%(clusterLabel)s)' % $._config)
               + prometheus.withInstant(true)
               + prometheus.withFormat('table'),
-              prometheus.new('${datasource}', 'sum(kube_pod_container_resource_requests{%(kubeStateMetricsSelector)s, resource="cpu"}) by (%(clusterLabel)s)' % $._config)
+              prometheus.new('${datasource}', 'sum(kube_pod_container_resource_requests{%(kubeStateMetricsSelector)s, %(envLabel)s="$env", resource="cpu"}) by (%(clusterLabel)s)' % $._config)
               + prometheus.withInstant(true)
               + prometheus.withFormat('table'),
-              prometheus.new('${datasource}', 'sum(node_namespace_pod_container:container_cpu_usage_seconds_total:sum_irate) by (%(clusterLabel)s) / sum(kube_pod_container_resource_requests{%(kubeStateMetricsSelector)s, resource="cpu"}) by (%(clusterLabel)s)' % $._config)
+              prometheus.new('${datasource}', 'sum(node_namespace_pod_container:container_cpu_usage_seconds_total:sum_irate) by (%(clusterLabel)s) / sum(kube_pod_container_resource_requests{%(kubeStateMetricsSelector)s, %(envLabel)s="$env", resource="cpu"}) by (%(clusterLabel)s)' % $._config)
               + prometheus.withInstant(true)
               + prometheus.withFormat('table'),
-              prometheus.new('${datasource}', 'sum(kube_pod_container_resource_limits{%(kubeStateMetricsSelector)s, resource="cpu"}) by (%(clusterLabel)s)' % $._config)
+              prometheus.new('${datasource}', 'sum(kube_pod_container_resource_limits{%(kubeStateMetricsSelector)s, %(envLabel)s="$env", resource="cpu"}) by (%(clusterLabel)s)' % $._config)
               + prometheus.withInstant(true)
               + prometheus.withFormat('table'),
-              prometheus.new('${datasource}', 'sum(node_namespace_pod_container:container_cpu_usage_seconds_total:sum_irate) by (%(clusterLabel)s) / sum(kube_pod_container_resource_limits{%(kubeStateMetricsSelector)s, resource="cpu"}) by (%(clusterLabel)s)' % $._config)
+              prometheus.new('${datasource}', 'sum(node_namespace_pod_container:container_cpu_usage_seconds_total:sum_irate) by (%(clusterLabel)s) / sum(kube_pod_container_resource_limits{%(kubeStateMetricsSelector)s, %(envLabel)s="$env", resource="cpu"}) by (%(clusterLabel)s)' % $._config)
               + prometheus.withInstant(true)
               + prometheus.withFormat('table'),
             ])
@@ -197,7 +209,7 @@ local var = g.dashboard.variable;
             + tsPanel.standardOptions.withUnit('bytes')
             + tsPanel.queryOptions.withTargets([
               // Not using container_memory_usage_bytes here because that includes page cache
-              prometheus.new('${datasource}', 'sum(container_memory_rss{%(cadvisorSelector)s, container!=""}) by (%(clusterLabel)s)' % $._config)
+              prometheus.new('${datasource}', 'sum(container_memory_rss{%(cadvisorSelector)s, %(envLabel)s="$env", container!=""}) by (%(clusterLabel)s)' % $._config)
               + prometheus.withLegendFormat('__auto'),
             ]),
           ],
@@ -206,19 +218,19 @@ local var = g.dashboard.variable;
             g.panel.table.new('Memory Requests by Cluster')
             + g.panel.table.standardOptions.withUnit('bytes')
             + g.panel.table.queryOptions.withTargets([
-              prometheus.new('${datasource}', 'sum(container_memory_rss{%(cadvisorSelector)s, container!=""}) by (%(clusterLabel)s)' % $._config)
+              prometheus.new('${datasource}', 'sum(container_memory_rss{%(cadvisorSelector)s, %(envLabel)s="$env", container!=""}) by (%(clusterLabel)s)' % $._config)
               + prometheus.withInstant(true)
               + prometheus.withFormat('table'),
-              prometheus.new('${datasource}', 'sum(kube_pod_container_resource_requests{%(kubeStateMetricsSelector)s, resource="memory"}) by (%(clusterLabel)s)' % $._config)
+              prometheus.new('${datasource}', 'sum(kube_pod_container_resource_requests{%(kubeStateMetricsSelector)s, %(envLabel)s="$env", resource="memory"}) by (%(clusterLabel)s)' % $._config)
               + prometheus.withInstant(true)
               + prometheus.withFormat('table'),
-              prometheus.new('${datasource}', 'sum(container_memory_rss{%(cadvisorSelector)s, container!=""}) by (%(clusterLabel)s) / sum(kube_pod_container_resource_requests{%(kubeStateMetricsSelector)s, resource="memory"}) by (%(clusterLabel)s)' % $._config)
+              prometheus.new('${datasource}', 'sum(container_memory_rss{%(cadvisorSelector)s, %(envLabel)s="$env", container!=""}) by (%(clusterLabel)s) / sum(kube_pod_container_resource_requests{%(kubeStateMetricsSelector)s, %(envLabel)s="$env", resource="memory"}) by (%(clusterLabel)s)' % $._config)
               + prometheus.withInstant(true)
               + prometheus.withFormat('table'),
-              prometheus.new('${datasource}', 'sum(kube_pod_container_resource_limits{%(kubeStateMetricsSelector)s, resource="memory"}) by (%(clusterLabel)s)' % $._config)
+              prometheus.new('${datasource}', 'sum(kube_pod_container_resource_limits{%(kubeStateMetricsSelector)s, %(envLabel)s="$env", resource="memory"}) by (%(clusterLabel)s)' % $._config)
               + prometheus.withInstant(true)
               + prometheus.withFormat('table'),
-              prometheus.new('${datasource}', 'sum(container_memory_rss{%(cadvisorSelector)s, container!=""}) by (%(clusterLabel)s) / sum(kube_pod_container_resource_limits{%(kubeStateMetricsSelector)s, resource="memory"}) by (%(clusterLabel)s)' % $._config)
+              prometheus.new('${datasource}', 'sum(container_memory_rss{%(cadvisorSelector)s, %(envLabel)s="$env", container!=""}) by (%(clusterLabel)s) / sum(kube_pod_container_resource_limits{%(kubeStateMetricsSelector)s, %(envLabel)s="$env", resource="memory"}) by (%(clusterLabel)s)' % $._config)
               + prometheus.withInstant(true)
               + prometheus.withFormat('table'),
             ])
@@ -299,7 +311,7 @@ local var = g.dashboard.variable;
         + g.dashboard.time.withFrom('now-1h')
         + g.dashboard.time.withTo('now')
         + g.dashboard.withRefresh($._config.grafanaK8s.refresh)
-        + g.dashboard.withVariables([variables.datasource])
+        + g.dashboard.withVariables([variables.datasource, variables.env])
         + g.dashboard.withPanels(
           g.util.grid.wrapPanels(panels.highlights, panelWidth=4, panelHeight=3, startY=0)
           + g.util.grid.wrapPanels(panels.cpuUsage, panelWidth=24, panelHeight=7, startY=1)

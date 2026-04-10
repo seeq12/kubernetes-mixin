@@ -55,12 +55,24 @@ local var = g.dashboard.variable;
           )
           + var.query.withSort(type='alphabetical'),
 
+        env:
+          var.query.new('env')
+          + var.query.withDatasourceFromVariable(self.datasource)
+          + var.query.queryTypes.withLabelValues(
+            $._config.envLabel,
+            'up{%(cadvisorSelector)s, %(clusterLabel)s="$cluster"}' % $._config,
+          )
+          + var.query.generalOptions.withLabel('env')
+          + var.query.refresh.onTime()
+          + var.query.generalOptions.showOnDashboard.withLabelAndValue()
+          + var.query.withSort(type='alphabetical'),
+
         namespace:
           var.query.new('namespace')
           + var.query.withDatasourceFromVariable(self.datasource)
           + var.query.queryTypes.withLabelValues(
             'namespace',
-            'container_network_receive_packets_total{%(clusterLabel)s="$cluster"}' % $._config,
+            'container_network_receive_packets_total{%(clusterLabel)s="$cluster", %(envLabel)s="$env"}' % $._config,
           )
           + var.query.generalOptions.withCurrent('kube-system')
           + var.query.generalOptions.withLabel('namespace')
@@ -74,7 +86,7 @@ local var = g.dashboard.variable;
           + var.query.withDatasourceFromVariable(self.datasource)
           + var.query.queryTypes.withLabelValues(
             'workload_type',
-            'namespace_workload_pod:kube_pod_owner:relabel{%(clusterLabel)s="$cluster", namespace="$namespace", workload=~".+"}' % $._config,
+            'namespace_workload_pod:kube_pod_owner:relabel{%(clusterLabel)s="$cluster", %(envLabel)s="$env", namespace="$namespace", workload=~".+"}' % $._config,
           )
           + var.query.generalOptions.withLabel('workload_type')
           + var.query.refresh.onTime()
@@ -94,52 +106,52 @@ local var = g.dashboard.variable;
 
       local colQueries = [
         |||
-          sort_desc(sum(rate(container_network_receive_bytes_total{%(clusterLabel)s="$cluster",namespace="$namespace"}[%(grafanaIntervalVar)s])
-          * on (namespace,pod) kube_pod_info{%(clusterLabel)s="$cluster",namespace="$namespace",host_network="false"}
+          sort_desc(sum(rate(container_network_receive_bytes_total{%(clusterLabel)s="$cluster", %(envLabel)s="$env",namespace="$namespace"}[%(grafanaIntervalVar)s])
+          * on (namespace,pod) kube_pod_info{%(clusterLabel)s="$cluster", %(envLabel)s="$env",namespace="$namespace",host_network="false"}
           * on (namespace,pod)
-          group_left(workload,workload_type) namespace_workload_pod:kube_pod_owner:relabel{%(clusterLabel)s="$cluster",namespace="$namespace", workload=~".+", workload_type=~"$type"}) by (workload, workload_type))
+          group_left(workload,workload_type) namespace_workload_pod:kube_pod_owner:relabel{%(clusterLabel)s="$cluster", %(envLabel)s="$env",namespace="$namespace", workload=~".+", workload_type=~"$type"}) by (workload, workload_type))
         ||| % $._config,
         |||
-          sort_desc(sum(rate(container_network_transmit_bytes_total{%(clusterLabel)s="$cluster",namespace="$namespace"}[%(grafanaIntervalVar)s])
-          * on (namespace,pod) kube_pod_info{%(clusterLabel)s="$cluster",namespace="$namespace",host_network="false"}
+          sort_desc(sum(rate(container_network_transmit_bytes_total{%(clusterLabel)s="$cluster", %(envLabel)s="$env",namespace="$namespace"}[%(grafanaIntervalVar)s])
+          * on (namespace,pod) kube_pod_info{%(clusterLabel)s="$cluster", %(envLabel)s="$env",namespace="$namespace",host_network="false"}
           * on (namespace,pod)
-          group_left(workload,workload_type) namespace_workload_pod:kube_pod_owner:relabel{%(clusterLabel)s="$cluster",namespace="$namespace", workload=~".+", workload_type=~"$type"}) by (workload, workload_type))
+          group_left(workload,workload_type) namespace_workload_pod:kube_pod_owner:relabel{%(clusterLabel)s="$cluster", %(envLabel)s="$env",namespace="$namespace", workload=~".+", workload_type=~"$type"}) by (workload, workload_type))
         ||| % $._config,
         |||
-          sort_desc(avg(rate(container_network_receive_bytes_total{%(clusterLabel)s="$cluster",namespace="$namespace"}[%(grafanaIntervalVar)s])
-          * on (namespace,pod) kube_pod_info{%(clusterLabel)s="$cluster",namespace="$namespace",host_network="false"}
+          sort_desc(avg(rate(container_network_receive_bytes_total{%(clusterLabel)s="$cluster", %(envLabel)s="$env",namespace="$namespace"}[%(grafanaIntervalVar)s])
+          * on (namespace,pod) kube_pod_info{%(clusterLabel)s="$cluster", %(envLabel)s="$env",namespace="$namespace",host_network="false"}
           * on (namespace,pod)
-          group_left(workload,workload_type) namespace_workload_pod:kube_pod_owner:relabel{%(clusterLabel)s="$cluster",namespace="$namespace", workload=~".+", workload_type=~"$type"}) by (workload, workload_type))
+          group_left(workload,workload_type) namespace_workload_pod:kube_pod_owner:relabel{%(clusterLabel)s="$cluster", %(envLabel)s="$env",namespace="$namespace", workload=~".+", workload_type=~"$type"}) by (workload, workload_type))
         ||| % $._config,
         |||
-          sort_desc(avg(rate(container_network_transmit_bytes_total{%(clusterLabel)s="$cluster",namespace="$namespace"}[%(grafanaIntervalVar)s])
-          * on (namespace,pod) kube_pod_info{%(clusterLabel)s="$cluster",namespace="$namespace",host_network="false"}
+          sort_desc(avg(rate(container_network_transmit_bytes_total{%(clusterLabel)s="$cluster", %(envLabel)s="$env",namespace="$namespace"}[%(grafanaIntervalVar)s])
+          * on (namespace,pod) kube_pod_info{%(clusterLabel)s="$cluster", %(envLabel)s="$env",namespace="$namespace",host_network="false"}
           * on (namespace,pod)
-          group_left(workload,workload_type) namespace_workload_pod:kube_pod_owner:relabel{%(clusterLabel)s="$cluster",namespace="$namespace", workload=~".+", workload_type=~"$type"}) by (workload, workload_type))
+          group_left(workload,workload_type) namespace_workload_pod:kube_pod_owner:relabel{%(clusterLabel)s="$cluster", %(envLabel)s="$env",namespace="$namespace", workload=~".+", workload_type=~"$type"}) by (workload, workload_type))
         ||| % $._config,
         |||
-          sort_desc(sum(rate(container_network_receive_packets_total{%(clusterLabel)s="$cluster",namespace="$namespace"}[%(grafanaIntervalVar)s])
-          * on (namespace,pod) kube_pod_info{%(clusterLabel)s="$cluster",namespace="$namespace",host_network="false"}
+          sort_desc(sum(rate(container_network_receive_packets_total{%(clusterLabel)s="$cluster", %(envLabel)s="$env",namespace="$namespace"}[%(grafanaIntervalVar)s])
+          * on (namespace,pod) kube_pod_info{%(clusterLabel)s="$cluster", %(envLabel)s="$env",namespace="$namespace",host_network="false"}
           * on (namespace,pod)
-          group_left(workload,workload_type) namespace_workload_pod:kube_pod_owner:relabel{%(clusterLabel)s="$cluster",namespace="$namespace", workload=~".+", workload_type=~"$type"}) by (workload, workload_type))
+          group_left(workload,workload_type) namespace_workload_pod:kube_pod_owner:relabel{%(clusterLabel)s="$cluster", %(envLabel)s="$env",namespace="$namespace", workload=~".+", workload_type=~"$type"}) by (workload, workload_type))
         ||| % $._config,
         |||
-          sort_desc(sum(rate(container_network_transmit_packets_total{%(clusterLabel)s="$cluster",namespace="$namespace"}[%(grafanaIntervalVar)s])
-          * on (namespace,pod) kube_pod_info{%(clusterLabel)s="$cluster",namespace="$namespace",host_network="false"}
+          sort_desc(sum(rate(container_network_transmit_packets_total{%(clusterLabel)s="$cluster", %(envLabel)s="$env",namespace="$namespace"}[%(grafanaIntervalVar)s])
+          * on (namespace,pod) kube_pod_info{%(clusterLabel)s="$cluster", %(envLabel)s="$env",namespace="$namespace",host_network="false"}
           * on (namespace,pod)
-          group_left(workload,workload_type) namespace_workload_pod:kube_pod_owner:relabel{%(clusterLabel)s="$cluster",namespace="$namespace", workload=~".+", workload_type=~"$type"}) by (workload, workload_type))
+          group_left(workload,workload_type) namespace_workload_pod:kube_pod_owner:relabel{%(clusterLabel)s="$cluster", %(envLabel)s="$env",namespace="$namespace", workload=~".+", workload_type=~"$type"}) by (workload, workload_type))
         ||| % $._config,
         |||
-          sort_desc(sum(rate(container_network_receive_packets_dropped_total{%(clusterLabel)s="$cluster",namespace="$namespace"}[%(grafanaIntervalVar)s])
-          * on (namespace,pod) kube_pod_info{%(clusterLabel)s="$cluster",namespace="$namespace",host_network="false"}
+          sort_desc(sum(rate(container_network_receive_packets_dropped_total{%(clusterLabel)s="$cluster", %(envLabel)s="$env",namespace="$namespace"}[%(grafanaIntervalVar)s])
+          * on (namespace,pod) kube_pod_info{%(clusterLabel)s="$cluster", %(envLabel)s="$env",namespace="$namespace",host_network="false"}
           * on (namespace,pod)
-          group_left(workload,workload_type) namespace_workload_pod:kube_pod_owner:relabel{%(clusterLabel)s="$cluster",namespace="$namespace", workload=~".+", workload_type=~"$type"}) by (workload, workload_type))
+          group_left(workload,workload_type) namespace_workload_pod:kube_pod_owner:relabel{%(clusterLabel)s="$cluster", %(envLabel)s="$env",namespace="$namespace", workload=~".+", workload_type=~"$type"}) by (workload, workload_type))
         ||| % $._config,
         |||
-          sort_desc(sum(rate(container_network_transmit_packets_dropped_total{%(clusterLabel)s="$cluster",namespace="$namespace"}[%(grafanaIntervalVar)s])
-          * on (namespace,pod) kube_pod_info{%(clusterLabel)s="$cluster",namespace="$namespace",host_network="false"}
+          sort_desc(sum(rate(container_network_transmit_packets_dropped_total{%(clusterLabel)s="$cluster", %(envLabel)s="$env",namespace="$namespace"}[%(grafanaIntervalVar)s])
+          * on (namespace,pod) kube_pod_info{%(clusterLabel)s="$cluster", %(envLabel)s="$env",namespace="$namespace",host_network="false"}
           * on (namespace,pod)
-          group_left(workload,workload_type) namespace_workload_pod:kube_pod_owner:relabel{%(clusterLabel)s="$cluster",namespace="$namespace", workload=~".+", workload_type=~"$type"}) by (workload, workload_type))
+          group_left(workload,workload_type) namespace_workload_pod:kube_pod_owner:relabel{%(clusterLabel)s="$cluster", %(envLabel)s="$env",namespace="$namespace", workload=~".+", workload_type=~"$type"}) by (workload, workload_type))
         ||| % $._config,
       ];
 
@@ -154,14 +166,14 @@ local var = g.dashboard.variable;
           prometheus.new(
             '${datasource}',
             |||
-              sort_desc(sum(rate(container_network_receive_bytes_total{%(clusterLabel)s="$cluster",namespace="$namespace"}[%(grafanaIntervalVar)s])
+              sort_desc(sum(rate(container_network_receive_bytes_total{%(clusterLabel)s="$cluster", %(envLabel)s="$env",namespace="$namespace"}[%(grafanaIntervalVar)s])
               * on (%(clusterLabel)s,namespace,pod) group_left ()
                   topk by (%(clusterLabel)s,namespace,pod) (
                     1,
                     max by (%(clusterLabel)s,namespace,pod) (kube_pod_info{host_network="false"})
                   )
               * on (%(clusterLabel)s,namespace,pod)
-              group_left(workload,workload_type) namespace_workload_pod:kube_pod_owner:relabel{%(clusterLabel)s="$cluster",namespace="$namespace", workload=~".+", workload_type=~"$type"}) by (workload))
+              group_left(workload,workload_type) namespace_workload_pod:kube_pod_owner:relabel{%(clusterLabel)s="$cluster", %(envLabel)s="$env",namespace="$namespace", workload=~".+", workload_type=~"$type"}) by (workload))
             ||| % $._config
           )
           + prometheus.withLegendFormat('__auto'),
@@ -177,14 +189,14 @@ local var = g.dashboard.variable;
           prometheus.new(
             '${datasource}',
             |||
-              sort_desc(sum(rate(container_network_transmit_bytes_total{%(clusterLabel)s="$cluster",namespace="$namespace"}[%(grafanaIntervalVar)s])
+              sort_desc(sum(rate(container_network_transmit_bytes_total{%(clusterLabel)s="$cluster", %(envLabel)s="$env",namespace="$namespace"}[%(grafanaIntervalVar)s])
               * on (%(clusterLabel)s,namespace,pod) group_left ()
                   topk by (%(clusterLabel)s,namespace,pod) (
                     1,
                     max by (%(clusterLabel)s,namespace,pod) (kube_pod_info{host_network="false"})
                   )
               * on (%(clusterLabel)s,namespace,pod)
-              group_left(workload,workload_type) namespace_workload_pod:kube_pod_owner:relabel{%(clusterLabel)s="$cluster",namespace="$namespace", workload=~".+", workload_type=~"$type"}) by (workload))
+              group_left(workload,workload_type) namespace_workload_pod:kube_pod_owner:relabel{%(clusterLabel)s="$cluster", %(envLabel)s="$env",namespace="$namespace", workload=~".+", workload_type=~"$type"}) by (workload))
             ||| % $._config
           )
           + prometheus.withLegendFormat('__auto'),
@@ -332,14 +344,14 @@ local var = g.dashboard.variable;
           prometheus.new(
             '${datasource}',
             |||
-              sort_desc(sum(rate(container_network_receive_bytes_total{%(clusterLabel)s="$cluster",namespace="$namespace"}[%(grafanaIntervalVar)s])
+              sort_desc(sum(rate(container_network_receive_bytes_total{%(clusterLabel)s="$cluster", %(envLabel)s="$env",namespace="$namespace"}[%(grafanaIntervalVar)s])
               * on (%(clusterLabel)s,namespace,pod) group_left ()
                   topk by (%(clusterLabel)s,namespace,pod) (
                     1,
                     max by (%(clusterLabel)s,namespace,pod) (kube_pod_info{host_network="false"})
                   )
               * on (%(clusterLabel)s,namespace,pod)
-              group_left(workload,workload_type) namespace_workload_pod:kube_pod_owner:relabel{%(clusterLabel)s="$cluster",namespace="$namespace", workload=~".+", workload_type=~"$type"}) by (workload))
+              group_left(workload,workload_type) namespace_workload_pod:kube_pod_owner:relabel{%(clusterLabel)s="$cluster", %(envLabel)s="$env",namespace="$namespace", workload=~".+", workload_type=~"$type"}) by (workload))
             ||| % $._config
           )
           + prometheus.withLegendFormat('__auto'),
@@ -351,14 +363,14 @@ local var = g.dashboard.variable;
           prometheus.new(
             '${datasource}',
             |||
-              sort_desc(sum(rate(container_network_transmit_bytes_total{%(clusterLabel)s="$cluster",namespace="$namespace"}[%(grafanaIntervalVar)s])
+              sort_desc(sum(rate(container_network_transmit_bytes_total{%(clusterLabel)s="$cluster", %(envLabel)s="$env",namespace="$namespace"}[%(grafanaIntervalVar)s])
               * on (%(clusterLabel)s,namespace,pod) group_left ()
                   topk by (%(clusterLabel)s,namespace,pod) (
                     1,
                     max by (%(clusterLabel)s,namespace,pod) (kube_pod_info{host_network="false"})
                   )
               * on (%(clusterLabel)s,namespace,pod)
-              group_left(workload,workload_type) namespace_workload_pod:kube_pod_owner:relabel{%(clusterLabel)s="$cluster",namespace="$namespace", workload=~".+", workload_type=~"$type"}) by (workload))
+              group_left(workload,workload_type) namespace_workload_pod:kube_pod_owner:relabel{%(clusterLabel)s="$cluster", %(envLabel)s="$env",namespace="$namespace", workload=~".+", workload_type=~"$type"}) by (workload))
             ||| % $._config
           )
           + prometheus.withLegendFormat('__auto'),
@@ -370,14 +382,14 @@ local var = g.dashboard.variable;
           prometheus.new(
             '${datasource}',
             |||
-              sort_desc(avg(rate(container_network_receive_bytes_total{%(clusterLabel)s="$cluster",namespace="$namespace"}[%(grafanaIntervalVar)s])
+              sort_desc(avg(rate(container_network_receive_bytes_total{%(clusterLabel)s="$cluster", %(envLabel)s="$env",namespace="$namespace"}[%(grafanaIntervalVar)s])
               * on (%(clusterLabel)s,namespace,pod) group_left ()
                   topk by (%(clusterLabel)s,namespace,pod) (
                     1,
                     max by (%(clusterLabel)s,namespace,pod) (kube_pod_info{host_network="false"})
                   )
               * on (%(clusterLabel)s,namespace,pod)
-              group_left(workload,workload_type) namespace_workload_pod:kube_pod_owner:relabel{%(clusterLabel)s="$cluster",namespace="$namespace", workload=~".+", workload_type=~"$type"}) by (workload))
+              group_left(workload,workload_type) namespace_workload_pod:kube_pod_owner:relabel{%(clusterLabel)s="$cluster", %(envLabel)s="$env",namespace="$namespace", workload=~".+", workload_type=~"$type"}) by (workload))
             ||| % $._config
           )
           + prometheus.withLegendFormat('__auto'),
@@ -389,14 +401,14 @@ local var = g.dashboard.variable;
           prometheus.new(
             '${datasource}',
             |||
-              sort_desc(avg(rate(container_network_transmit_bytes_total{%(clusterLabel)s="$cluster",namespace="$namespace"}[%(grafanaIntervalVar)s])
+              sort_desc(avg(rate(container_network_transmit_bytes_total{%(clusterLabel)s="$cluster", %(envLabel)s="$env",namespace="$namespace"}[%(grafanaIntervalVar)s])
               * on (%(clusterLabel)s,namespace,pod) group_left ()
                   topk by (%(clusterLabel)s,namespace,pod) (
                     1,
                     max by (%(clusterLabel)s,namespace,pod) (kube_pod_info{host_network="false"})
                   )
               * on (%(clusterLabel)s,namespace,pod)
-              group_left(workload,workload_type) namespace_workload_pod:kube_pod_owner:relabel{%(clusterLabel)s="$cluster",namespace="$namespace", workload=~".+", workload_type=~"$type"}) by (workload))
+              group_left(workload,workload_type) namespace_workload_pod:kube_pod_owner:relabel{%(clusterLabel)s="$cluster", %(envLabel)s="$env",namespace="$namespace", workload=~".+", workload_type=~"$type"}) by (workload))
             ||| % $._config
           )
           + prometheus.withLegendFormat('__auto'),
@@ -408,14 +420,14 @@ local var = g.dashboard.variable;
           prometheus.new(
             '${datasource}',
             |||
-              sort_desc(sum(rate(container_network_receive_packets_total{%(clusterLabel)s="$cluster",namespace="$namespace"}[%(grafanaIntervalVar)s])
+              sort_desc(sum(rate(container_network_receive_packets_total{%(clusterLabel)s="$cluster", %(envLabel)s="$env",namespace="$namespace"}[%(grafanaIntervalVar)s])
               * on (%(clusterLabel)s,namespace,pod) group_left ()
                   topk by (%(clusterLabel)s,namespace,pod) (
                     1,
                     max by (%(clusterLabel)s,namespace,pod) (kube_pod_info{host_network="false"})
                   )
               * on (%(clusterLabel)s,namespace,pod)
-              group_left(workload,workload_type) namespace_workload_pod:kube_pod_owner:relabel{%(clusterLabel)s="$cluster",namespace="$namespace", workload=~".+", workload_type=~"$type"}) by (workload))
+              group_left(workload,workload_type) namespace_workload_pod:kube_pod_owner:relabel{%(clusterLabel)s="$cluster", %(envLabel)s="$env",namespace="$namespace", workload=~".+", workload_type=~"$type"}) by (workload))
             ||| % $._config
           )
           + prometheus.withLegendFormat('__auto'),
@@ -427,14 +439,14 @@ local var = g.dashboard.variable;
           prometheus.new(
             '${datasource}',
             |||
-              sort_desc(sum(rate(container_network_transmit_packets_total{%(clusterLabel)s="$cluster",namespace="$namespace"}[%(grafanaIntervalVar)s])
+              sort_desc(sum(rate(container_network_transmit_packets_total{%(clusterLabel)s="$cluster", %(envLabel)s="$env",namespace="$namespace"}[%(grafanaIntervalVar)s])
               * on (%(clusterLabel)s,namespace,pod) group_left ()
                   topk by (%(clusterLabel)s,namespace,pod) (
                     1,
                     max by (%(clusterLabel)s,namespace,pod) (kube_pod_info{host_network="false"})
                   )
               * on (%(clusterLabel)s,namespace,pod)
-              group_left(workload,workload_type) namespace_workload_pod:kube_pod_owner:relabel{%(clusterLabel)s="$cluster",namespace="$namespace", workload=~".+", workload_type=~"$type"}) by (workload))
+              group_left(workload,workload_type) namespace_workload_pod:kube_pod_owner:relabel{%(clusterLabel)s="$cluster", %(envLabel)s="$env",namespace="$namespace", workload=~".+", workload_type=~"$type"}) by (workload))
             ||| % $._config
           )
           + prometheus.withLegendFormat('__auto'),
@@ -446,14 +458,14 @@ local var = g.dashboard.variable;
           prometheus.new(
             '${datasource}',
             |||
-              sort_desc(sum(rate(container_network_receive_packets_dropped_total{%(clusterLabel)s="$cluster",namespace="$namespace"}[%(grafanaIntervalVar)s])
+              sort_desc(sum(rate(container_network_receive_packets_dropped_total{%(clusterLabel)s="$cluster", %(envLabel)s="$env",namespace="$namespace"}[%(grafanaIntervalVar)s])
               * on (%(clusterLabel)s,namespace,pod) group_left ()
                   topk by (%(clusterLabel)s,namespace,pod) (
                     1,
                     max by (%(clusterLabel)s,namespace,pod) (kube_pod_info{host_network="false"})
                   )
               * on (%(clusterLabel)s,namespace,pod)
-              group_left(workload,workload_type) namespace_workload_pod:kube_pod_owner:relabel{%(clusterLabel)s="$cluster",namespace="$namespace", workload=~".+", workload_type=~"$type"}) by (workload))
+              group_left(workload,workload_type) namespace_workload_pod:kube_pod_owner:relabel{%(clusterLabel)s="$cluster", %(envLabel)s="$env",namespace="$namespace", workload=~".+", workload_type=~"$type"}) by (workload))
             ||| % $._config
           )
           + prometheus.withLegendFormat('__auto'),
@@ -465,14 +477,14 @@ local var = g.dashboard.variable;
           prometheus.new(
             '${datasource}',
             |||
-              sort_desc(sum(rate(container_network_transmit_packets_dropped_total{%(clusterLabel)s="$cluster",namespace="$namespace"}[%(grafanaIntervalVar)s])
+              sort_desc(sum(rate(container_network_transmit_packets_dropped_total{%(clusterLabel)s="$cluster", %(envLabel)s="$env",namespace="$namespace"}[%(grafanaIntervalVar)s])
               * on (%(clusterLabel)s,namespace,pod) group_left ()
                   topk by (%(clusterLabel)s,namespace,pod) (
                     1,
                     max by (%(clusterLabel)s,namespace,pod) (kube_pod_info{host_network="false"})
                   )
               * on (%(clusterLabel)s,namespace,pod)
-              group_left(workload,workload_type) namespace_workload_pod:kube_pod_owner:relabel{%(clusterLabel)s="$cluster",namespace="$namespace", workload=~".+", workload_type=~"$type"}) by (workload))
+              group_left(workload,workload_type) namespace_workload_pod:kube_pod_owner:relabel{%(clusterLabel)s="$cluster", %(envLabel)s="$env",namespace="$namespace", workload=~".+", workload_type=~"$type"}) by (workload))
             ||| % $._config
           )
           + prometheus.withLegendFormat('__auto'),
@@ -486,7 +498,7 @@ local var = g.dashboard.variable;
       + g.dashboard.time.withFrom('now-1h')
       + g.dashboard.time.withTo('now')
       + g.dashboard.withRefresh($._config.grafanaK8s.refresh)
-      + g.dashboard.withVariables([variables.datasource, variables.cluster, variables.namespace, variables.workload_type])
+      + g.dashboard.withVariables([variables.datasource, variables.cluster, variables.env, variables.namespace, variables.workload_type])
       + g.dashboard.withPanels(g.util.grid.wrapPanels(panels, panelWidth=12, panelHeight=9)),
   },
 }

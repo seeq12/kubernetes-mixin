@@ -64,12 +64,24 @@ local var = g.dashboard.variable;
           )
           + var.query.withSort(type='alphabetical'),
 
+        env:
+          var.query.new('env')
+          + var.query.withDatasourceFromVariable(self.datasource)
+          + var.query.queryTypes.withLabelValues(
+            $._config.envLabel,
+            'up{%(kubeProxySelector)s, %(clusterLabel)s="$cluster"}' % $._config,
+          )
+          + var.query.generalOptions.withLabel('env')
+          + var.query.refresh.onTime()
+          + var.query.generalOptions.showOnDashboard.withLabelAndValue()
+          + var.query.withSort(type='alphabetical'),
+
         instance:
           var.query.new('instance')
           + var.query.withDatasourceFromVariable(self.datasource)
           + var.query.queryTypes.withLabelValues(
             'instance',
-            'up{%(kubeProxySelector)s, %(clusterLabel)s="$cluster", %(kubeProxySelector)s}' % $._config,
+            'up{%(kubeProxySelector)s, %(clusterLabel)s="$cluster", %(envLabel)s="$env", %(kubeProxySelector)s}' % $._config,
           )
           + var.query.generalOptions.withLabel('instance')
           + var.query.refresh.onTime()
@@ -78,14 +90,14 @@ local var = g.dashboard.variable;
       };
 
       local panels = [
-        statPanel('Up', 'none', 'sum(up{%(clusterLabel)s="$cluster", %(kubeProxySelector)s})' % $._config)
+        statPanel('Up', 'none', 'sum(up{%(clusterLabel)s="$cluster", %(envLabel)s="$env", %(kubeProxySelector)s})' % $._config)
         + stat.gridPos.withW(4),
 
         tsPanel.new('Rules Sync Rate')
         + tsPanel.gridPos.withW(10)
         + tsPanel.standardOptions.withUnit('ops')
         + tsPanel.queryOptions.withTargets([
-          prometheus.new('${datasource}', 'sum(rate(kubeproxy_sync_proxy_rules_duration_seconds_count{%(clusterLabel)s="$cluster", %(kubeProxySelector)s, instance=~"$instance"}[%(grafanaIntervalVar)s]))' % $._config)
+          prometheus.new('${datasource}', 'sum(rate(kubeproxy_sync_proxy_rules_duration_seconds_count{%(clusterLabel)s="$cluster", %(envLabel)s="$env", %(kubeProxySelector)s, instance=~"$instance"}[%(grafanaIntervalVar)s]))' % $._config)
           + prometheus.withLegendFormat('rate'),
         ]),
 
@@ -93,21 +105,21 @@ local var = g.dashboard.variable;
         + tsPanel.gridPos.withW(10)
         + tsPanel.standardOptions.withUnit('s')
         + tsPanel.queryOptions.withTargets([
-          prometheus.new('${datasource}', 'histogram_quantile(0.99,rate(kubeproxy_sync_proxy_rules_duration_seconds_bucket{%(clusterLabel)s="$cluster", %(kubeProxySelector)s, instance=~"$instance"}[%(grafanaIntervalVar)s]))' % $._config)
+          prometheus.new('${datasource}', 'histogram_quantile(0.99,rate(kubeproxy_sync_proxy_rules_duration_seconds_bucket{%(clusterLabel)s="$cluster", %(envLabel)s="$env", %(kubeProxySelector)s, instance=~"$instance"}[%(grafanaIntervalVar)s]))' % $._config)
           + prometheus.withLegendFormat('{{instance}}'),
         ]),
 
         tsPanel.new('Network Programming Rate')
         + tsPanel.standardOptions.withUnit('ops')
         + tsPanel.queryOptions.withTargets([
-          prometheus.new('${datasource}', 'sum(rate(kubeproxy_network_programming_duration_seconds_count{%(clusterLabel)s="$cluster", %(kubeProxySelector)s, instance=~"$instance"}[%(grafanaIntervalVar)s]))' % $._config)
+          prometheus.new('${datasource}', 'sum(rate(kubeproxy_network_programming_duration_seconds_count{%(clusterLabel)s="$cluster", %(envLabel)s="$env", %(kubeProxySelector)s, instance=~"$instance"}[%(grafanaIntervalVar)s]))' % $._config)
           + prometheus.withLegendFormat('rate'),
         ]),
 
         tsPanel.new('Network Programming Latency 99th Quantile')
         + tsPanel.standardOptions.withUnit('s')
         + tsPanel.queryOptions.withTargets([
-          prometheus.new('${datasource}', 'histogram_quantile(0.99, sum(rate(kubeproxy_network_programming_duration_seconds_bucket{%(clusterLabel)s="$cluster", %(kubeProxySelector)s, instance=~"$instance"}[%(grafanaIntervalVar)s])) by (instance, le))' % $._config)
+          prometheus.new('${datasource}', 'histogram_quantile(0.99, sum(rate(kubeproxy_network_programming_duration_seconds_bucket{%(clusterLabel)s="$cluster", %(envLabel)s="$env", %(kubeProxySelector)s, instance=~"$instance"}[%(grafanaIntervalVar)s])) by (instance, le))' % $._config)
           + prometheus.withLegendFormat('{{instance}}'),
         ]),
 
@@ -115,16 +127,16 @@ local var = g.dashboard.variable;
         + tsPanel.gridPos.withW(8)
         + tsPanel.standardOptions.withUnit('ops')
         + tsPanel.queryOptions.withTargets([
-          prometheus.new('${datasource}', 'sum(rate(rest_client_requests_total{%(clusterLabel)s="$cluster",%(kubeProxySelector)s, instance=~"$instance",code=~"2.."}[%(grafanaIntervalVar)s]))' % $._config)
+          prometheus.new('${datasource}', 'sum(rate(rest_client_requests_total{%(clusterLabel)s="$cluster", %(envLabel)s="$env",%(kubeProxySelector)s, instance=~"$instance",code=~"2.."}[%(grafanaIntervalVar)s]))' % $._config)
           + prometheus.withLegendFormat('2xx'),
 
-          prometheus.new('${datasource}', 'sum(rate(rest_client_requests_total{%(clusterLabel)s="$cluster",%(kubeProxySelector)s, instance=~"$instance",code=~"3.."}[%(grafanaIntervalVar)s]))' % $._config)
+          prometheus.new('${datasource}', 'sum(rate(rest_client_requests_total{%(clusterLabel)s="$cluster", %(envLabel)s="$env",%(kubeProxySelector)s, instance=~"$instance",code=~"3.."}[%(grafanaIntervalVar)s]))' % $._config)
           + prometheus.withLegendFormat('3xx'),
 
-          prometheus.new('${datasource}', 'sum(rate(rest_client_requests_total{%(clusterLabel)s="$cluster",%(kubeProxySelector)s, instance=~"$instance",code=~"4.."}[%(grafanaIntervalVar)s]))' % $._config)
+          prometheus.new('${datasource}', 'sum(rate(rest_client_requests_total{%(clusterLabel)s="$cluster", %(envLabel)s="$env",%(kubeProxySelector)s, instance=~"$instance",code=~"4.."}[%(grafanaIntervalVar)s]))' % $._config)
           + prometheus.withLegendFormat('4xx'),
 
-          prometheus.new('${datasource}', 'sum(rate(rest_client_requests_total{%(clusterLabel)s="$cluster",%(kubeProxySelector)s, instance=~"$instance",code=~"5.."}[%(grafanaIntervalVar)s]))' % $._config)
+          prometheus.new('${datasource}', 'sum(rate(rest_client_requests_total{%(clusterLabel)s="$cluster", %(envLabel)s="$env",%(kubeProxySelector)s, instance=~"$instance",code=~"5.."}[%(grafanaIntervalVar)s]))' % $._config)
           + prometheus.withLegendFormat('5xx'),
         ]),
 
@@ -132,7 +144,7 @@ local var = g.dashboard.variable;
         + tsPanel.gridPos.withW(16)
         + tsPanel.standardOptions.withUnit('ops')
         + tsPanel.queryOptions.withTargets([
-          prometheus.new('${datasource}', 'histogram_quantile(0.99, sum(rate(rest_client_request_duration_seconds_bucket{%(clusterLabel)s="$cluster", %(kubeProxySelector)s,instance=~"$instance",verb="POST"}[%(grafanaIntervalVar)s])) by (verb, le))' % $._config)
+          prometheus.new('${datasource}', 'histogram_quantile(0.99, sum(rate(rest_client_request_duration_seconds_bucket{%(clusterLabel)s="$cluster", %(envLabel)s="$env", %(kubeProxySelector)s,instance=~"$instance",verb="POST"}[%(grafanaIntervalVar)s])) by (verb, le))' % $._config)
           + prometheus.withLegendFormat('{{verb}}'),
         ]),
 
@@ -140,7 +152,7 @@ local var = g.dashboard.variable;
         + tsPanel.gridPos.withW(24)
         + tsPanel.standardOptions.withUnit('s')
         + tsPanel.queryOptions.withTargets([
-          prometheus.new('${datasource}', 'histogram_quantile(0.99, sum(rate(rest_client_request_duration_seconds_bucket{%(clusterLabel)s="$cluster", %(kubeProxySelector)s, instance=~"$instance", verb="GET"}[%(grafanaIntervalVar)s])) by (verb, le))' % $._config)
+          prometheus.new('${datasource}', 'histogram_quantile(0.99, sum(rate(rest_client_request_duration_seconds_bucket{%(clusterLabel)s="$cluster", %(envLabel)s="$env", %(kubeProxySelector)s, instance=~"$instance", verb="GET"}[%(grafanaIntervalVar)s])) by (verb, le))' % $._config)
           + prometheus.withLegendFormat('{{verb}}'),
         ]),
 
@@ -149,7 +161,7 @@ local var = g.dashboard.variable;
         + tsPanel.gridPos.withW(8)
         + tsPanel.standardOptions.withUnit('bytes')
         + tsPanel.queryOptions.withTargets([
-          prometheus.new('${datasource}', 'process_resident_memory_bytes{%(clusterLabel)s="$cluster", %(kubeProxySelector)s,instance=~"$instance"}' % $._config)
+          prometheus.new('${datasource}', 'process_resident_memory_bytes{%(clusterLabel)s="$cluster", %(envLabel)s="$env", %(kubeProxySelector)s,instance=~"$instance"}' % $._config)
           + prometheus.withLegendFormat('{{instance}}'),
         ]),
 
@@ -157,7 +169,7 @@ local var = g.dashboard.variable;
         + tsPanel.gridPos.withW(8)
         + tsPanel.standardOptions.withUnit('short')
         + tsPanel.queryOptions.withTargets([
-          prometheus.new('${datasource}', 'rate(process_cpu_seconds_total{%(clusterLabel)s="$cluster", %(kubeProxySelector)s,instance=~"$instance"}[%(grafanaIntervalVar)s])' % $._config)
+          prometheus.new('${datasource}', 'rate(process_cpu_seconds_total{%(clusterLabel)s="$cluster", %(envLabel)s="$env", %(kubeProxySelector)s,instance=~"$instance"}[%(grafanaIntervalVar)s])' % $._config)
           + prometheus.withLegendFormat('{{instance}}'),
         ]),
 
@@ -165,7 +177,7 @@ local var = g.dashboard.variable;
         + tsPanel.gridPos.withW(8)
         + tsPanel.standardOptions.withUnit('short')
         + tsPanel.queryOptions.withTargets([
-          prometheus.new('${datasource}', 'go_goroutines{%(clusterLabel)s="$cluster", %(kubeProxySelector)s,instance=~"$instance"}' % $._config)
+          prometheus.new('${datasource}', 'go_goroutines{%(clusterLabel)s="$cluster", %(envLabel)s="$env", %(kubeProxySelector)s,instance=~"$instance"}' % $._config)
           + prometheus.withLegendFormat('{{instance}}'),
         ]),
       ];
@@ -177,7 +189,7 @@ local var = g.dashboard.variable;
       + g.dashboard.time.withFrom('now-1h')
       + g.dashboard.time.withTo('now')
       + g.dashboard.withRefresh($._config.grafanaK8s.refresh)
-      + g.dashboard.withVariables([variables.datasource, variables.cluster, variables.instance])
+      + g.dashboard.withVariables([variables.datasource, variables.cluster, variables.env, variables.instance])
       + g.dashboard.withPanels(g.util.grid.wrapPanels(panels, panelWidth=12, panelHeight=7)),
   },
 }
