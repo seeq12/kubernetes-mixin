@@ -51,7 +51,7 @@ local var = g.dashboard.variable;
           + var.query.withDatasourceFromVariable(self.datasource)
           + var.query.queryTypes.withLabelValues(
             $._config.clusterLabel,
-            'kubelet_volume_stats_capacity_bytes{%(kubeletSelector)s}' % $._config,
+            'kubelet_volume_stats_capacity_bytes{%(kubeletSelector)s, %(envLabel)s="$env"}' % $._config,
           )
           + var.query.generalOptions.withLabel('cluster')
           + var.query.refresh.onTime()
@@ -67,7 +67,7 @@ local var = g.dashboard.variable;
           + var.query.withDatasourceFromVariable(self.datasource)
           + var.query.queryTypes.withLabelValues(
             $._config.envLabel,
-            'up{%(kubeletSelector)s, %(clusterLabel)s="$cluster"}' % $._config,
+            'up{%(kubeletSelector)s}' % $._config,
           )
           + var.query.generalOptions.withLabel('env')
           + var.query.refresh.onTime()
@@ -204,7 +204,7 @@ local var = g.dashboard.variable;
       + g.dashboard.time.withFrom('now-1h')
       + g.dashboard.time.withTo('now')
       + g.dashboard.withRefresh($._config.grafanaK8s.refresh)
-      + g.dashboard.withVariables([variables.datasource, variables.cluster, variables.env, variables.namespace, variables.volume])
+      + g.dashboard.withVariables([variables.datasource, variables.env, variables.cluster, variables.namespace, variables.volume])
       + g.dashboard.withPanels([
         panels.tsUsage { gridPos+: { w: 18, h: 7, y: 0 } },
         panels.gaugeUsage { gridPos+: { w: 6, h: 7, x: 18, y: 0 } },

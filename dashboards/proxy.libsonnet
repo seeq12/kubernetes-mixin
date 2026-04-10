@@ -53,7 +53,7 @@ local var = g.dashboard.variable;
           + var.query.withDatasourceFromVariable(self.datasource)
           + var.query.queryTypes.withLabelValues(
             $._config.clusterLabel,
-            'up{%(kubeProxySelector)s}' % $._config
+            'up{%(kubeProxySelector)s, %(envLabel)s="$env"}' % $._config
           )
           + var.query.generalOptions.withLabel('cluster')
           + var.query.refresh.onTime()
@@ -69,7 +69,7 @@ local var = g.dashboard.variable;
           + var.query.withDatasourceFromVariable(self.datasource)
           + var.query.queryTypes.withLabelValues(
             $._config.envLabel,
-            'up{%(kubeProxySelector)s, %(clusterLabel)s="$cluster"}' % $._config,
+            'up{%(kubeProxySelector)s}' % $._config,
           )
           + var.query.generalOptions.withLabel('env')
           + var.query.refresh.onTime()
@@ -189,7 +189,7 @@ local var = g.dashboard.variable;
       + g.dashboard.time.withFrom('now-1h')
       + g.dashboard.time.withTo('now')
       + g.dashboard.withRefresh($._config.grafanaK8s.refresh)
-      + g.dashboard.withVariables([variables.datasource, variables.cluster, variables.env, variables.instance])
+      + g.dashboard.withVariables([variables.datasource, variables.env, variables.cluster, variables.instance])
       + g.dashboard.withPanels(g.util.grid.wrapPanels(panels, panelWidth=12, panelHeight=7)),
   },
 }

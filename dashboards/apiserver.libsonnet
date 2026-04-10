@@ -283,7 +283,7 @@ local override = ts.standardOptions.override;
           + var.query.withDatasourceFromVariable(self.datasource)
           + var.query.queryTypes.withLabelValues(
             $._config.clusterLabel,
-            'up{%(kubeApiserverSelector)s}' % $._config,
+            'up{%(kubeApiserverSelector)s, %(envLabel)s="$env"}' % $._config,
           )
           + var.query.generalOptions.withLabel('cluster')
           + var.query.refresh.onTime()
@@ -299,7 +299,7 @@ local override = ts.standardOptions.override;
           + var.query.withDatasourceFromVariable(self.datasource)
           + var.query.queryTypes.withLabelValues(
             $._config.envLabel,
-            'up{%(kubeApiserverSelector)s, %(clusterLabel)s="$cluster"}' % $._config,
+            'up{%(kubeApiserverSelector)s}' % $._config,
           )
           + var.query.generalOptions.withLabel('env')
           + var.query.refresh.onTime()
@@ -325,8 +325,8 @@ local override = ts.standardOptions.override;
       + g.dashboard.time.withTo('now')
       + g.dashboard.withVariables([
         variables.datasource,
-        variables.cluster,
         variables.env,
+        variables.cluster,
         variables.instance,
       ])
       + g.dashboard.withPanels(

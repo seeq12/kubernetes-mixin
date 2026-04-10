@@ -42,7 +42,7 @@ local var = g.dashboard.variable;
           + var.query.withDatasourceFromVariable(self.datasource)
           + var.query.queryTypes.withLabelValues(
             $._config.clusterLabel,
-            'up{%(kubeStateMetricsSelector)s}' % $._config,
+            'up{%(kubeStateMetricsSelector)s, %(envLabel)s="$env"}' % $._config,
           )
           + var.query.generalOptions.withLabel('cluster')
           + var.query.refresh.onTime()
@@ -58,7 +58,7 @@ local var = g.dashboard.variable;
           + var.query.withDatasourceFromVariable(self.datasource)
           + var.query.queryTypes.withLabelValues(
             $._config.envLabel,
-            'up{%(kubeStateMetricsSelector)s, %(clusterLabel)s="$cluster"}' % $._config,
+            'up{%(kubeStateMetricsSelector)s}' % $._config,
           )
           + var.query.generalOptions.withLabel('env')
           + var.query.refresh.onTime()
@@ -762,7 +762,7 @@ local var = g.dashboard.variable;
       + g.dashboard.time.withFrom('now-1h')
       + g.dashboard.time.withTo('now')
       + g.dashboard.withRefresh($._config.grafanaK8s.refresh)
-      + g.dashboard.withVariables([variables.datasource, variables.cluster, variables.env, variables.namespace, variables.workload_type])
+      + g.dashboard.withVariables([variables.datasource, variables.env, variables.cluster, variables.namespace, variables.workload_type])
       + g.dashboard.withPanels(g.util.grid.wrapPanels(panels, panelWidth=12, panelHeight=7)),
   },
 }

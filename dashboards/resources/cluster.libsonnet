@@ -54,7 +54,7 @@ local var = g.dashboard.variable;
           + var.query.withDatasourceFromVariable(self.datasource)
           + var.query.queryTypes.withLabelValues(
             $._config.clusterLabel,
-            'up{%(cadvisorSelector)s}' % $._config,
+            'up{%(cadvisorSelector)s, %(envLabel)s="$env"}' % $._config,
           )
           + var.query.generalOptions.withLabel('cluster')
           + var.query.refresh.onTime()
@@ -70,7 +70,7 @@ local var = g.dashboard.variable;
           + var.query.withDatasourceFromVariable(self.datasource)
           + var.query.queryTypes.withLabelValues(
             $._config.envLabel,
-            'up{%(cadvisorSelector)s, %(clusterLabel)s="$cluster"}' % $._config,
+            'up{%(cadvisorSelector)s}' % $._config,
           )
           + var.query.generalOptions.withLabel('env')
           + var.query.refresh.onTime()
@@ -736,7 +736,7 @@ local var = g.dashboard.variable;
       + g.dashboard.time.withFrom('now-1h')
       + g.dashboard.time.withTo('now')
       + g.dashboard.withRefresh($._config.grafanaK8s.refresh)
-      + g.dashboard.withVariables([variables.datasource, variables.cluster, variables.env])
+      + g.dashboard.withVariables([variables.datasource, variables.env, variables.cluster])
       + g.dashboard.withPanels(g.util.grid.wrapPanels(panels, panelWidth=24, panelHeight=6)),
   },
 }
