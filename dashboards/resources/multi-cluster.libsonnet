@@ -74,7 +74,7 @@ local var = g.dashboard.variable;
             statPanel(
               'CPU Utilisation',
               'none',
-              'sum(cluster:node_cpu:ratio_rate5m) / count(cluster:node_cpu:ratio_rate5m)'
+              'sum(cluster:node_cpu:ratio_rate5m{%(envLabel)s="$env"}) / count(cluster:node_cpu:ratio_rate5m{%(envLabel)s="$env"})' % $._config
             ),
 
             statPanel(
@@ -92,7 +92,7 @@ local var = g.dashboard.variable;
             statPanel(
               'Memory Utilisation',
               'percentunit',
-              '1 - sum(:node_memory_MemAvailable_bytes:sum) / sum(node_memory_MemTotal_bytes{%(nodeExporterSelector)s, %(envLabel)s="$env"})' % $._config
+              '1 - sum(:node_memory_MemAvailable_bytes:sum{%(envLabel)s="$env"}) / sum(node_memory_MemTotal_bytes{%(nodeExporterSelector)s, %(envLabel)s="$env"})' % $._config
             ),
 
             statPanel(
@@ -111,7 +111,7 @@ local var = g.dashboard.variable;
           cpuUsage: [
             tsPanel.new('CPU Usage')
             + tsPanel.queryOptions.withTargets([
-              prometheus.new('${datasource}', 'sum(node_namespace_pod_container:container_cpu_usage_seconds_total:sum_irate) by (%(clusterLabel)s)' % $._config)
+              prometheus.new('${datasource}', 'sum(node_namespace_pod_container:container_cpu_usage_seconds_total:sum_irate{%(envLabel)s="$env"}) by (%(clusterLabel)s)' % $._config)
               + prometheus.withLegendFormat('__auto'),
             ]),
           ],
@@ -119,19 +119,19 @@ local var = g.dashboard.variable;
           cpuQuota: [
             g.panel.table.new('CPU Quota')
             + g.panel.table.queryOptions.withTargets([
-              prometheus.new('${datasource}', 'sum(node_namespace_pod_container:container_cpu_usage_seconds_total:sum_irate) by (%(clusterLabel)s)' % $._config)
+              prometheus.new('${datasource}', 'sum(node_namespace_pod_container:container_cpu_usage_seconds_total:sum_irate{%(envLabel)s="$env"}) by (%(clusterLabel)s)' % $._config)
               + prometheus.withInstant(true)
               + prometheus.withFormat('table'),
               prometheus.new('${datasource}', 'sum(kube_pod_container_resource_requests{%(kubeStateMetricsSelector)s, %(envLabel)s="$env", resource="cpu"}) by (%(clusterLabel)s)' % $._config)
               + prometheus.withInstant(true)
               + prometheus.withFormat('table'),
-              prometheus.new('${datasource}', 'sum(node_namespace_pod_container:container_cpu_usage_seconds_total:sum_irate) by (%(clusterLabel)s) / sum(kube_pod_container_resource_requests{%(kubeStateMetricsSelector)s, %(envLabel)s="$env", resource="cpu"}) by (%(clusterLabel)s)' % $._config)
+              prometheus.new('${datasource}', 'sum(node_namespace_pod_container:container_cpu_usage_seconds_total:sum_irate{%(envLabel)s="$env"}) by (%(clusterLabel)s) / sum(kube_pod_container_resource_requests{%(kubeStateMetricsSelector)s, %(envLabel)s="$env", resource="cpu"}) by (%(clusterLabel)s)' % $._config)
               + prometheus.withInstant(true)
               + prometheus.withFormat('table'),
               prometheus.new('${datasource}', 'sum(kube_pod_container_resource_limits{%(kubeStateMetricsSelector)s, %(envLabel)s="$env", resource="cpu"}) by (%(clusterLabel)s)' % $._config)
               + prometheus.withInstant(true)
               + prometheus.withFormat('table'),
-              prometheus.new('${datasource}', 'sum(node_namespace_pod_container:container_cpu_usage_seconds_total:sum_irate) by (%(clusterLabel)s) / sum(kube_pod_container_resource_limits{%(kubeStateMetricsSelector)s, %(envLabel)s="$env", resource="cpu"}) by (%(clusterLabel)s)' % $._config)
+              prometheus.new('${datasource}', 'sum(node_namespace_pod_container:container_cpu_usage_seconds_total:sum_irate{%(envLabel)s="$env"}) by (%(clusterLabel)s) / sum(kube_pod_container_resource_limits{%(kubeStateMetricsSelector)s, %(envLabel)s="$env", resource="cpu"}) by (%(clusterLabel)s)' % $._config)
               + prometheus.withInstant(true)
               + prometheus.withFormat('table'),
             ])
