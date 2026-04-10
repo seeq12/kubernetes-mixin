@@ -134,25 +134,25 @@ local var = g.dashboard.variable;
         + tsPanel.queryOptions.withTargets([
           prometheus.new(
             '${datasource}',
-            'sum(rate(rest_client_requests_total{%(kubeControllerManagerSelector)s, instance=~"$instance",code=~"2.."}[%(grafanaIntervalVar)s]))' % $._config
+            'sum(rate(rest_client_requests_total{%(kubeControllerManagerSelector)s, %(clusterLabel)s="$cluster", %(envLabel)s="$env", instance=~"$instance",code=~"2.."}[%(grafanaIntervalVar)s]))' % $._config
           )
           + prometheus.withLegendFormat('2xx'),
 
           prometheus.new(
             '${datasource}',
-            'sum(rate(rest_client_requests_total{%(kubeControllerManagerSelector)s, instance=~"$instance",code=~"3.."}[%(grafanaIntervalVar)s]))' % $._config
+            'sum(rate(rest_client_requests_total{%(kubeControllerManagerSelector)s, %(clusterLabel)s="$cluster", %(envLabel)s="$env", instance=~"$instance",code=~"3.."}[%(grafanaIntervalVar)s]))' % $._config
           )
           + prometheus.withLegendFormat('3xx'),
 
           prometheus.new(
             '${datasource}',
-            'sum(rate(rest_client_requests_total{%(kubeControllerManagerSelector)s, instance=~"$instance",code=~"4.."}[%(grafanaIntervalVar)s]))' % $._config
+            'sum(rate(rest_client_requests_total{%(kubeControllerManagerSelector)s, %(clusterLabel)s="$cluster", %(envLabel)s="$env", instance=~"$instance",code=~"4.."}[%(grafanaIntervalVar)s]))' % $._config
           )
           + prometheus.withLegendFormat('4xx'),
 
           prometheus.new(
             '${datasource}',
-            'sum(rate(rest_client_requests_total{%(kubeControllerManagerSelector)s, instance=~"$instance",code=~"5.."}[%(grafanaIntervalVar)s]))' % $._config
+            'sum(rate(rest_client_requests_total{%(kubeControllerManagerSelector)s, %(clusterLabel)s="$cluster", %(envLabel)s="$env", instance=~"$instance",code=~"5.."}[%(grafanaIntervalVar)s]))' % $._config
           )
           + prometheus.withLegendFormat('5xx'),
         ]),
